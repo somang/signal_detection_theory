@@ -1,13 +1,16 @@
+import sdt_metrics
 import numpy as np
+import matplotlib.pyplot as plt
+
 from scipy.stats import norm
 from math import exp,sqrt
-Z = norm.ppf
-
-import sdt_metrics
+from sklearn import metrics
+from sklearn.metrics import roc_auc_score
 from sdt_metrics import dprime, HI, MI, CR, FA, SDT
 
-import matplotlib.pyplot as plt
-fig, ax = plt.subplots(1, 1)
+
+Z = norm.ppf
+#fig, ax = plt.subplots(1, 1)
 
 
 #The probability density function for norm is:
@@ -55,7 +58,6 @@ Output: 0.018610425189886332
 scipy.stats.norm.ppf(.98,100,12)
 Output: 124.64498692758187
 
-"""
 
 print(norm.sf(0, 0, 1))
 print(norm.sf(0, 1.075, 1))
@@ -83,6 +85,9 @@ ax.legend(loc='best', frameon=False)
 plt.show()
 
 
+matrix convolution
+
+"""
 
 def dPrime(hits, misses, cr, fa):
     # Floors an ceilings are replaced by half hits and half FA's
@@ -108,7 +113,69 @@ def dPrime(hits, misses, cr, fa):
     return out
     # Note the adjustment of rate=0 and rate=1, to prevent infinite values.
 
+def plot_roc_curve(fpr, tpr): # takes false-positive rate, true-positive rate 
+    plt.plot(fpr, tpr, color='orange', label='ROC')
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--')
+    plt.xlabel('False-Alarm Rate')
+    plt.ylabel('Hit Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend()
+    plt.show()
+
+
+"""
+https://towardsdatascience.com/receiver-operating-characteristic-curves-demystified-in-python-bd531a4364d0
+"""
+def pdf(x, sd, mean):
+    const = 1.0 / np.sqrt(2*np.pi*(sd**2))
+    pdf_normal_dist = const*np.exp(-((x-mean)**2)/(2.0*(sd**2)))
+    return pdf_normal_dist
+
+def plot_pdf(ideal_pdf, error_pdf, ax):
+    ax.fill(x, ideal_pdf, "g", alpha=0.5)
+    ax.fill(x, error_pdf,"r", alpha=0.5)
+    ax.set_xlim([0,1])
+    ax.set_ylim([0,5])
+    ax.set_title("Probability Distribution", fontsize=14)
+    ax.set_ylabel('Probability Density', fontsize=12)
+    ax.set_xlabel('Z-score', fontsize=12)
+    ax.legend(["noise (ideal)", "error"])
+
+def plot_roc(good_pdf, bad_pdf, ax):
+    #Total
+    total_bad = np.sum(bad_pdf)
+    total_good = np.sum(good_pdf)
+    #Cumulative sum
+    cum_TP = 0
+    cum_FP = 0
+    #TPR and FPR list initialization
+    TPR_list=[]
+    FPR_list=[]
+    #Iteratre through all values of x
+    for i in range(len(x)):
+        #We are only interested in non-zero values of bad
+        if bad_pdf[i]>0:
+            cum_TP+=bad_pdf[len(x)-1-i]
+            cum_FP+=good_pdf[len(x)-1-i]
+        FPR=cum_FP/total_good
+        TPR=cum_TP/total_bad
+        TPR_list.append(TPR)
+        FPR_list.append(FPR)
+    #Calculating AUC, taking the 100 timesteps into account
+    auc=np.sum(TPR_list)/100
+    #Plotting final ROC curve
+    ax.plot(FPR_list, TPR_list)
+    ax.plot(x,x, "--")
+    ax.set_xlim([0,1])
+    ax.set_ylim([0,1])
+    ax.set_title("ROC Curve", fontsize=14)
+    ax.set_ylabel('TPR', fontsize=12)
+    ax.set_xlabel('FPR', fontsize=12)
+    ax.grid()
+    ax.legend(["AUC=%.3f"%auc])
+
 if __name__ == "__main__":
+    """
     d_prime = dPrime(18, 12, 3, 27)
     print(d_prime) # should be -153.49%
 
@@ -120,3 +187,42 @@ if __name__ == "__main__":
     #print(sdt_obj)
     print(sdt_obj.c())
     print(sdt_obj.dprime())
+    
+    y_actual = np.array([1, 1, 2, 2])
+    y_scores = np.array([0.1, 0.4, 0.35, 0.8])
+    fpr, tpr, thresholds = metrics.roc_curve(y_actual, y_scores, pos_label=2)
+    roc_auc = roc_auc_score(y_actual, y_scores)
+
+    print(fpr)
+    print(tpr)
+    print(thresholds)
+    print(roc_auc)
+    tpr = [0.045,	0.068,	0.386,	0.909,	1.000,	1.000]
+    fpr = [0.023,	0.023,	0.295,	0.932,	1.000,	1.000]
+    plot_roc_curve(fpr, tpr)  
+    """
+
+    x = np.linspace(0, 1, num=100)
+    good_pdf = pdf(x, 0.1, 0.4)
+    bad_pdf = pdf(x, 0.1, 0.6)
+
+    fig, ax = plt.subplots(1,2, figsize=(10,5))
+    plot_pdf(good_pdf, bad_pdf, ax[0])
+    plot_roc(good_pdf, bad_pdf, ax[1])
+    plt.tight_layout()
+    plt.show()
+
+
+    """
+    x = np.linspace(0, 1, num=100)
+    fig, ax = plt.subplots(3,2, figsize=(10,12))
+    means_tuples = [(0.5,0.5),(0.4,0.6),(0.3,0.7)]
+    i=0
+    for good_mean, bad_mean in means_tuples:
+        good_pdf = pdf(x, 0.1, good_mean)
+        bad_pdf  = pdf(x, 0.1, bad_mean)
+        plot_pdf(good_pdf, bad_pdf, ax[i,0])
+        plot_roc(good_pdf, bad_pdf, ax[i,1])
+        i+=1
+    plt.tight_layout()
+    """
