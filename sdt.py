@@ -1,12 +1,16 @@
 import sdt_metrics
-import numpy as np
-import matplotlib.pyplot as plt
+from sdt_metrics import dprime, HI, MI, CR, FA, SDT
 
-from scipy.stats import norm
-from math import exp,sqrt
+import numpy as np
+import numpy.polynomial.polynomial as poly
+
 from sklearn import metrics
 from sklearn.metrics import roc_auc_score
-from sdt_metrics import dprime, HI, MI, CR, FA, SDT
+
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+from math import exp,sqrt
+
 
 
 Z = norm.ppf
@@ -89,39 +93,6 @@ matrix convolution
 
 """
 
-def dPrime(hits, misses, cr, fa):
-    # Floors an ceilings are replaced by half hits and half FA's
-    halfHit = 0.5/(hits+misses)
-    halfFa = 0.5/(fa+cr)
- 
-    # Calculate hitrate and avoid d' infinity
-    hitRate = hits/(hits+misses)
-    if hitRate == 1: hitRate = 1-halfHit
-    if hitRate == 0: hitRate = halfHit
- 
-    # Calculate false alarm rate and avoid d' infinity
-    faRate = fa/(fa+cr)
-    if faRate == 1: faRate = 1-halfFa
-    if faRate == 0: faRate = halfFa
- 
-    # Return d', beta, c and Ad'
-    out = {}
-    out['d'] = Z(hitRate) - Z(faRate)
-    out['beta'] = exp((Z(faRate)**2 - Z(hitRate)**2)/2)
-    out['c'] = -(Z(hitRate) + Z(faRate))/2
-    out['Ad'] = norm.cdf(out['d']/sqrt(2))
-    return out
-    # Note the adjustment of rate=0 and rate=1, to prevent infinite values.
-
-def plot_roc_curve(fpr, tpr): # takes false-positive rate, true-positive rate 
-    plt.plot(fpr, tpr, color='orange', label='ROC')
-    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--')
-    plt.xlabel('False-Alarm Rate')
-    plt.ylabel('Hit Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend()
-    plt.show()
-
 
 """
 https://towardsdatascience.com/receiver-operating-characteristic-curves-demystified-in-python-bd531a4364d0
@@ -174,6 +145,50 @@ def plot_roc(good_pdf, bad_pdf, ax):
     ax.grid()
     ax.legend(["AUC=%.3f"%auc])
 
+
+def dPrime(hits, misses, cr, fa):
+    # Floors an ceilings are replaced by half hits and half FA's
+    halfHit = 0.5/(hits+misses)
+    halfFa = 0.5/(fa+cr)
+ 
+    # Calculate hitrate and avoid d' infinity
+    hitRate = hits/(hits+misses)
+    if hitRate == 1: hitRate = 1-halfHit
+    if hitRate == 0: hitRate = halfHit
+ 
+    # Calculate false alarm rate and avoid d' infinity
+    faRate = fa/(fa+cr)
+    if faRate == 1: faRate = 1-halfFa
+    if faRate == 0: faRate = halfFa
+ 
+    # Return d', beta, c and Ad'
+    out = {}
+    out['d'] = Z(hitRate) - Z(faRate)
+    out['beta'] = exp((Z(faRate)**2 - Z(hitRate)**2)/2)
+    out['c'] = -(Z(hitRate) + Z(faRate))/2
+    out['Ad'] = norm.cdf(out['d']/sqrt(2))
+    return out
+    # Note the adjustment of rate=0 and rate=1, to prevent infinite values.
+
+def plot_roc_curve(fpr, tpr, var, p=False): # takes false-positive rate, true-positive rate 
+    if p:
+        x = np.linspace(0, 1, 100)
+        coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
+        ffit = poly.polyval(x, coefs)
+        plt.plot(x, ffit, color='lightblue', label='polyfit') # polyfit - fitting line with the dots.
+        print('number of points:', len(fpr))        
+        print(np.poly1d(coefs[::-1]))
+    
+    plt.plot(fpr, tpr, color='orange', label='ROC', marker='.') #, linestyle="None")
+    # guide line     
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', label="d'=0")
+    plt.xlabel('False-Alarm Rate')
+    plt.ylabel('Hit Rate')
+    plt.title(var + "-" + 'Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc='best')
+    plt.show()
+
+
 if __name__ == "__main__":
     """
     d_prime = dPrime(18, 12, 3, 27)
@@ -187,21 +202,26 @@ if __name__ == "__main__":
     #print(sdt_obj)
     print(sdt_obj.c())
     print(sdt_obj.dprime())
-    
+    """
+
+    """
     y_actual = np.array([1, 1, 2, 2])
     y_scores = np.array([0.1, 0.4, 0.35, 0.8])
     fpr, tpr, thresholds = metrics.roc_curve(y_actual, y_scores, pos_label=2)
     roc_auc = roc_auc_score(y_actual, y_scores)
-
     print(fpr)
     print(tpr)
     print(thresholds)
     print(roc_auc)
-    tpr = [0.045,	0.068,	0.386,	0.909,	1.000,	1.000]
-    fpr = [0.023,	0.023,	0.295,	0.932,	1.000,	1.000]
-    plot_roc_curve(fpr, tpr)  
     """
 
+    tpr = [0.023,	0.045,	0.068,	0.250,	0.386,	0.545,	0.909,	1.000,	1.000,	1.000] # hit rate: y-axis of ROC
+    fpr = [0.023,	0.023,	0.023,	0.182,	0.295,	0.477,	0.932,	1.000,	1.000,	1.000] # false-alarm rate: x-axis of ROC
+    plot_roc_curve(fpr, tpr, 'v2: Delay 6 sec.', True)  
+    
+    
+    """
+    ######################################################
     x = np.linspace(0, 1, num=100)
     good_pdf = pdf(x, 0.1, 0.4)
     bad_pdf = pdf(x, 0.1, 0.6)
@@ -212,8 +232,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-
-    """
+    ######################################################
     x = np.linspace(0, 1, num=100)
     fig, ax = plt.subplots(3,2, figsize=(10,12))
     means_tuples = [(0.5,0.5),(0.4,0.6),(0.3,0.7)]
