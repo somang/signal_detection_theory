@@ -187,6 +187,7 @@ def plot_roc_curve(fpr, tpr, var, p=False): # takes false-positive rate, true-po
     plt.title(var + "-" + 'Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc='best')
     #plt.show()
+
     file_name = var.split("_")[0] + "/" + var + '.png'
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
@@ -218,32 +219,35 @@ if __name__ == "__main__":
     print(roc_auc)
     """
 
-    #tpr = [0.023,	0.045,	0.068,	0.250,	0.386,	0.545,	0.909,	1.000,	1.000,	1.000] # hit rate: y-axis of ROC
-    #fpr = [0.023,	0.023,	0.023,	0.182,	0.295,	0.477,	0.932,	1.000,	1.000,	1.000] # false-alarm rate: x-axis of ROC
-    #plot_roc_curve(fpr, tpr, 'v2: Delay 6 sec.', True)  
-    
+    ########################################################################################################################
     files = ['a_rating_data.in', 'd_rating_data.in', 'h_rating_data.in']
     for input_file in files:
         print(input_file)
         with open(input_file) as f:
             content = f.readlines()
             for i in range(0, len(content), 2):
-                hit_line, fa_line = content[i], content[i+1]
+                hit_line, fa_line = content[i+1], content[i]
                 hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)            
                 fa_list = list(map(lambda x: x.strip('\n'), fa_line.split("\t"))) # map(function_to_apply, list_of_inputs)            
+                print(hit_list[0])
+                print(fa_list[0])
                 tpr, fpr = hit_list[1:], fa_list[1:]
                 tpr = list(map(lambda x: float(x), tpr))
                 fpr = list(map(lambda x: float(x), fpr))
                 fname = input_file.split('_')[0] + "_" + fa_list[0].replace(":", "_")              
                 plot_roc_curve(fpr, tpr, fname, True)
-
+    
+    
                 
     
-
-
+    """
+    
+    tpr = [0.299, 0.598, 0.790, 0.931, 0.990, 1] # hit rate: y-axis of ROC
+    fpr = [0.019, 0.120, 0.253, 0.565, 0.834, 1] # false-alarm rate: x-axis of ROC
+    plot_roc_curve(fpr, tpr, 'testing.', True)  
+    
 
     
-    """
     ######################################################
     x = np.linspace(0, 1, num=100)
     good_pdf = pdf(x, 0.1, 0.4)
