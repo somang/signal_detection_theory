@@ -176,8 +176,8 @@ def plot_roc_curve(fpr, tpr, var, p=False): # takes false-positive rate, true-po
         coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
         ffit = poly.polyval(x, coefs)
         plt.plot(x, ffit, color='lightblue', label='polyfit') # polyfit - fitting line with the dots.
-        print('number of points:', len(fpr))        
-        print(np.poly1d(coefs[::-1]))
+        #print('number of points:', len(fpr))        
+        #print(np.poly1d(coefs[::-1]))
     
     plt.plot(fpr, tpr, color='orange', label='ROC', marker='.') #, linestyle="None")
     # guide line     
@@ -186,7 +186,10 @@ def plot_roc_curve(fpr, tpr, var, p=False): # takes false-positive rate, true-po
     plt.ylabel('Hit Rate')
     plt.title(var + "-" + 'Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc='best')
-    plt.show()
+    #plt.show()
+    file_name = var.split("_")[0] + "/" + var + '.png'
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
 
 
 if __name__ == "__main__":
@@ -215,10 +218,30 @@ if __name__ == "__main__":
     print(roc_auc)
     """
 
-    tpr = [0.023,	0.045,	0.068,	0.250,	0.386,	0.545,	0.909,	1.000,	1.000,	1.000] # hit rate: y-axis of ROC
-    fpr = [0.023,	0.023,	0.023,	0.182,	0.295,	0.477,	0.932,	1.000,	1.000,	1.000] # false-alarm rate: x-axis of ROC
-    plot_roc_curve(fpr, tpr, 'v2: Delay 6 sec.', True)  
+    #tpr = [0.023,	0.045,	0.068,	0.250,	0.386,	0.545,	0.909,	1.000,	1.000,	1.000] # hit rate: y-axis of ROC
+    #fpr = [0.023,	0.023,	0.023,	0.182,	0.295,	0.477,	0.932,	1.000,	1.000,	1.000] # false-alarm rate: x-axis of ROC
+    #plot_roc_curve(fpr, tpr, 'v2: Delay 6 sec.', True)  
     
+    files = ['a_rating_data.in', 'd_rating_data.in', 'h_rating_data.in']
+    for input_file in files:
+        print(input_file)
+        with open(input_file) as f:
+            content = f.readlines()
+            for i in range(0, len(content), 2):
+                hit_line, fa_line = content[i], content[i+1]
+                hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)            
+                fa_list = list(map(lambda x: x.strip('\n'), fa_line.split("\t"))) # map(function_to_apply, list_of_inputs)            
+                tpr, fpr = hit_list[1:], fa_list[1:]
+                tpr = list(map(lambda x: float(x), tpr))
+                fpr = list(map(lambda x: float(x), fpr))
+                fname = input_file.split('_')[0] + "_" + fa_list[0].replace(":", "_")              
+                plot_roc_curve(fpr, tpr, fname, True)
+
+                
+    
+
+
+
     
     """
     ######################################################
