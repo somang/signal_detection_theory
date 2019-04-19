@@ -13,6 +13,7 @@ from scipy.stats import norm
 
 from math import exp,sqrt,pi
 
+from line import Line
 
 
 """
@@ -142,7 +143,13 @@ if __name__ == "__main__":
 
     # What do I need?
     # input: factor variable value x
-    # output: probability of hit (H) and false-alarm (FA)
+    # output: probability of hit (H) and false-alarm (FA) given x
+
+    # what to do?
+    # convert x (ms, wpm, mw) to a z-score for the given 'signal' type.
+    # then get the c value probabilities p(H) and p(FA)
+
+
     
 
     # v15_overall
@@ -153,35 +160,79 @@ if __name__ == "__main__":
     #c = 0.426
     
 
-    # Display the probability density function (pdf)
-    x = np.linspace(-5, 5, 100)     # define a big enough x interval 
-    fig, ax = plt.subplots(1, 1, figsize=(7,5))
+    # # Display the probability density function (pdf)
+    # x = np.linspace(-5, 5, 100)     # define a big enough x interval 
+    # fig, ax = plt.subplots(1, 1, figsize=(7,5))
 
-    noise_pdf = norm.pdf(x)
-    error_pdf = norm.pdf(x, dprime, 1)              # get the norm.pdf for x interval
-    plt.plot(x, noise_pdf, "g", alpha=0.5, label="noise") #fill
-    plt.plot(x, error_pdf, "r", alpha=0.5, label="error")
-    plt.axvline(x=c, color='m', linestyle='-.') #, label="c= "+str(c))
-    plt.text(c+0.01, 0.01, "c= "+str(c))
+    # noise_pdf = norm.pdf(x)
+    # error_pdf = norm.pdf(x, dprime, 1)              # get the norm.pdf for x interval
+    # plt.plot(x, noise_pdf, "g", alpha=0.5, label="noise") #fill
+    # plt.plot(x, error_pdf, "r", alpha=0.5, label="error")
+    # plt.axvline(x=c, color='m', linestyle='-.') #, label="c= "+str(c))
+    # plt.text(c+0.01, 0.01, "c= "+str(c))
 
-    plt.vlines(0, 0, 0.4, color='lightblue', linestyle=':')
-    plt.vlines(dprime, 0, 0.4, color='c', linestyle=':')
-    plt.hlines(0.4, 0, dprime) #, label="d'= "+str(dprime))
-    plt.text(dprime, 0.405, "d'= "+str(dprime), fontsize=10)
+    # plt.vlines(0, 0, 0.4, color='c', linestyle=':')
+    # plt.vlines(dprime, 0, 0.4, color='c', linestyle=':')
+    # plt.hlines(0.4, 0, dprime) #, label="d'= "+str(dprime))
+    # plt.text(dprime, 0.405, "d'= "+str(dprime), fontsize=10)
     
-    ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='green', alpha=0.1, interpolate=True)
-    ax.fill_between(x, noise_pdf, 0, where=x > c, facecolor='red', alpha=0.1, interpolate=True)
+    # ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='green', alpha=0.15, label="hit") # , interpolate=True)
+    # ax.fill_between(x, noise_pdf, 0, where=x > c, facecolor='red', alpha=0.15, label="false alarm") #, interpolate=True)
+    # ax.fill_between(x, noise_pdf, error_pdf, where=x < c, facecolor='blue', alpha=0.15, label="correct rejection") # , interpolate=True)
+    # ax.fill_between(x, error_pdf, 0, where=x < c, facecolor='orange', alpha=0.15, label="miss") #, interpolate=True)
+
+    # ax.set_xlim([-5,5])
+    # ax.set_ylim([0, 0.5])
+    # ax.set_title("Probability Distribution", fontsize=14)
+    # ax.set_ylabel('Probability Density', fontsize=12)
+    # ax.set_xlabel('Z-score', fontsize=12)
+    # ax.legend()
+
+    # plt.tight_layout()
+    # plt.show()
+
+    
+    # given two points, get the mapping equation from raw value to z-score.
+    # V2: 6 sec delay
+    # data = ((6, -0.299), (3, 0))
+    # line = Line(data) 
+    # for i in range(10):
+    #     print(i, line.solve(i))
+
+    # V3: 90 wpm speed
+    # data = ((90, -0.297), (160, 0))
+    # line = Line(data) 
+    # for i in range(0,220,50):
+    #     print(i, line.solve(i))
+
+    # V4: 200 wpm speed
+    # data = ((200, -0.175), (160, 0))
+    # line = Line(data) 
+    # for i in range(0,220,50):
+    #     print(i, line.solve(i))
+
+    # V5: 1 HF Missing word
+    data = ((1, -0.236), (0, 0))
+    line = Line(data) 
+    for i in range(0,10,1):
+        print(i, line.solve(i))
 
 
-    ax.set_xlim([-5,5])
-    ax.set_ylim([0, 0.5])
-    ax.set_title("Probability Distribution", fontsize=14)
-    ax.set_ylabel('Probability Density', fontsize=12)
-    ax.set_xlabel('Z-score', fontsize=12)
-    ax.legend()
 
-    plt.tight_layout()
-    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -202,23 +253,10 @@ if __name__ == "__main__":
     
 
     
-    
-    
-     if you accidentally write scipy.stats.norm(mean=100, std=12) instead of
-     scipy.stats.norm(100, 12) or scipy.stats.norm(loc=100, scale=12), then it'll accept it,
-     but silently discard those extra keyword arguments and give you the default (0,1)
-
-    print(norm.cdf(x, mean, sd))
-
-    Here is more info. 
-    First you are dealing with a frozen distribution
-    (frozen in this case means its parameters are set to specific values). 
-    
     To create a frozen distribution:
     import scipy.stats
     scipy.stats.norm(loc=100, scale=12)
-    #where loc is the mean and scale is the std dev
-    #if you wish to pull out a random number from your distribution
+    #where loc is the mean and scale is the sd if you wish to pull out a random number from your distribution
     scipy.stats.norm.rvs(loc=100, scale=12)
 
     #To find the probability that the variable has a value LESS than or equal
@@ -239,20 +277,8 @@ if __name__ == "__main__":
     scipy.stats.norm.ppf(.98,100,12)
     Output: 124.64498692758187
 
-
     print(norm.sf(0, 0, 1))
     print(norm.sf(0, 1.075, 1))
-
-
-    # Display the probability density function (pdf)
-    x = np.linspace(norm.ppf(0.01), norm.ppf(0.99), 100)
-    ax.plot(x, norm.pdf(x),'r-', lw=5, alpha=0.6, label='norm pdf')
-
-    # the distribution object can be called (as a function) to fix the shape, location and scale parameters. 
-    # This returns a “frozen” RV object holding the given parameters fixed.
-    #Freeze the distribution and display the frozen pdf:
-    rv = norm()
-    ax.plot(x, rv.pdf(x), 'k-', lw=2, label='frozen pdf')
 
     # Check accuracy of cdf and ppf:
     vals = norm.ppf([0.001, 0.5, 0.999])
@@ -264,7 +290,6 @@ if __name__ == "__main__":
     ax.hist(r, normed=True, histtype='stepfilled', alpha=0.2)
     ax.legend(loc='best', frameon=False)
     plt.show()
-
 
     matrix convolution
 
