@@ -7,106 +7,119 @@ import numpy.polynomial.polynomial as poly
 from sklearn import metrics
 from sklearn.metrics import roc_auc_score
 
+from matplotlib import cm
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib.colors as colors
+from cycler import cycler
+
+
 from scipy import stats
 from scipy.stats import norm
 
+
+import math
 from math import exp,sqrt,pi
 
 from line import Line
 
 
-"""
-https://towardsdatascience.com/receiver-operating-characteristic-curves-demystified-in-python-bd531a4364d0
-"""
 
-def plot_pdf(ideal_pdf, error_pdf, xrange, ax):
+
+
+def draw_sdt(tpr, fpr, ax): # false-positive rate (noise), true-positive rate (signal hit), in z scores
+    # Display the probability density function (pdf)
+    x = np.linspace(-5, 5, 100)     # define a big enough x interval 
+
+    # get p(H) and p(FA)
+    pHit, pFA = 0, 0
+    for i in range(5):
+        pHit += tpr[i]        
+
+    for i in range(5):
+        pFA += fpr[i]        
+
+    # calculate d'
+    zHit, zFA = norm.ppf(pHit), norm.ppf(pFA)
+    dprime = zHit - zFA
+
+    # calculate c
+    c = -1 * (zHit + zFA) / 2
+    
+    noise_pdf = norm.pdf(x)
+    error_pdf = norm.pdf(x, dprime, 1)              # get the norm.pdf for x interval
+    ax.plot(x, noise_pdf, "g", alpha=0.9, label="noise")
+    ax.plot(x, error_pdf, "r", alpha=0.9, label="error")
+
+    plt.axvline(x=c, linestyle='-.') #, label="c= "+str(c))
+    plt.text(c+0.01, 0.01, "c= "+str(c))
+
+    plt.vlines(0, 0, 0.4, linestyle=':')
+    plt.vlines(dprime, 0, 0.4, linestyle=':')
+    plt.hlines(0.4, 0, dprime) #, label="d'= "+str(dprime))
+    plt.text(dprime, 0.405, "d'= "+str(dprime), fontsize=10)
+
+
+    # calculate c for each confidence level
+    tpr_cum, fpr_cum = get_cumul_z(tpr), get_cumul_z(fpr)
+    ztpr_r = list(map(lambda x: norm.ppf(x), tpr_cum))
+    zfpr_r = list(map(lambda x: norm.ppf(x), fpr_cum))
+    dprime_r = []
+    c_r = []
+    for i in range(len(ztpr_r)):
+        if ztpr_r[i]:
+            dprime_r.append(ztpr_r[i]-zfpr_r[i])
+            c_r.append(-1 * ( ztpr_r[i] + zfpr_r[i] ) / 2)
+    
+    for i in c_r:
+        if not math.isnan(i) and not math.isinf(i):
+            plt.vlines(i, 0, 0.4, linestyle=':')
+
+    # if dprime > 0:
+    #     ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='green', alpha=0.15, label="hit") # , interpolate=True)
+    #     ax.fill_between(x, noise_pdf, 0, where=x > c, facecolor='red', alpha=0.15, label="false alarm") #, interpolate=True)
+    #     ax.fill_between(x, noise_pdf, error_pdf, where=x < c, facecolor='blue', alpha=0.15, label="correct rejection") # , interpolate=True)
+    #     ax.fill_between(x, error_pdf, 0, where=x < c, facecolor='orange', alpha=0.15, label="miss") #, interpolate=True)
+    # else:
+    #     ax.fill_between(x, error_pdf, 0, where=x > c, facecolor='green', alpha=0.15, label="hit")
+    #     ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='red', alpha=0.15, label="false alarm")
+    #     ax.fill_between(x, error_pdf, 0, where=x < c, facecolor='blue', alpha=0.15, label="correct rejection")
+    #     ax.fill_between(x, error_pdf, noise_pdf, where=x < c, facecolor='orange', alpha=0.15, label="miss", hatch="/")
+
+
+    ax.set_xlim([-5,5])
+    ax.set_ylim([0, 0.5])
     ax.set_title("Probability Distribution", fontsize=14)
     ax.set_ylabel('Probability Density', fontsize=12)
     ax.set_xlabel('Z-score', fontsize=12)
-    ax.legend(["noise (ideal)", "error"])
+    ax.legend()
 
-def plot_roc(good_pdf, bad_pdf, ax):
-    #Total
-    total_bad = np.sum(bad_pdf)
-    total_good = np.sum(good_pdf)
-    #Cumulative sum
-    cum_TP = 0
-    cum_FP = 0
-    #TPR and FPR list initialization
-    TPR_list=[]
-    FPR_list=[]
-    #Iteratre through all values of x
-    for i in range(len(x)):
-        #We are only interested in non-zero values of bad
-        if bad_pdf[i]>0:
-            cum_TP+=bad_pdf[len(x)-1-i]
-            cum_FP+=good_pdf[len(x)-1-i]
-        FPR=cum_FP/total_good
-        TPR=cum_TP/total_bad
-        TPR_list.append(TPR)
-        FPR_list.append(FPR)
-    #Calculating AUC, taking the 100 timesteps into account
-    auc=np.sum(TPR_list)/100
-    #Plotting final ROC curve
-    ax.plot(FPR_list, TPR_list)
-    ax.plot(x,x, "--")
-    ax.set_xlim([0,1])
-    ax.set_ylim([0,1])
-    ax.set_title("ROC Curve", fontsize=14)
-    ax.set_ylabel('TPR', fontsize=12)
-    ax.set_xlabel('FPR', fontsize=12)
-    ax.grid()
-    ax.legend(["AUC=%.3f"%auc])
+    return ax
 
-
-def dPrime(hits, misses, cr, fa):
-    # Floors an ceilings are replaced by half hits and half FA's
-    halfHit = 0.5/(hits+misses)
-    halfFa = 0.5/(fa+cr)
- 
-    # Calculate hitrate and avoid d' infinity
-    hitRate = hits/(hits+misses)
-    if hitRate == 1: hitRate = 1-halfHit
-    if hitRate == 0: hitRate = halfHit
- 
-    # Calculate false alarm rate and avoid d' infinity
-    faRate = fa/(fa+cr)
-    if faRate == 1: faRate = 1-halfFa
-    if faRate == 0: faRate = halfFa
- 
-    # Return d', beta, c and Ad'
-    out = {}
-    out['d'] = Z(hitRate) - Z(faRate)
-    out['beta'] = exp((Z(faRate)**2 - Z(hitRate)**2)/2)
-    out['c'] = -(Z(hitRate) + Z(faRate))/2
-    out['Ad'] = norm.cdf(out['d']/sqrt(2))
-    return out
-    # Note the adjustment of rate=0 and rate=1, to prevent infinite values.
-
-def plot_roc_curve(fpr, tpr, var, p=False): # takes false-positive rate, true-positive rate 
+    
+def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
     if p:
         x = np.linspace(0, 1, 100)
         coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
         ffit = poly.polyval(x, coefs)
-        plt.plot(x, ffit, color='green', label='polyfit') # polyfit - fitting line with the dots.
-        #print('number of points:', len(fpr))        
-        #print(np.poly1d(coefs[::-1]))
+        ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
     
-    plt.plot(fpr, tpr, color='orange', label='ROC', marker='.') #, linestyle="None")
+    ax.plot(fpr, tpr, label='ROC', marker='.') #, linestyle="None")
     # guide line     
-    plt.plot([0, 1], [0, 1], color='lightblue', linestyle='--', label="d'=0")
-    plt.xlabel('False-Alarm Rate')
-    plt.ylabel('Hit Rate')
-    plt.title(var + "-" + 'Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc='best')
-    #plt.show()
+    ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0")
+    ax.set_xlabel('False-Alarm Rate')
+    ax.set_ylabel('Hit Rate')
+    ax.set_title(var + "-" + 'Receiver Operating Characteristic (ROC) Curve')
+    ax.legend(loc='best')
+    
+    return ax
 
-    file_name = var.split("_")[0] + "/" + var + '.png'
-    print(file_name)
-    plt.savefig(file_name, bbox_inches='tight')
-    plt.close()
-
+def get_cumul_z(rate):
+    tmp, sum = [], 0
+    for i in range(len(rate)):
+        sum += float(rate[i])
+        tmp.append(sum)
+    return tmp
 
 if __name__ == "__main__":
     """
@@ -121,24 +134,54 @@ if __name__ == "__main__":
     #print(sdt_obj)
     print(sdt_obj.c())
     print(sdt_obj.dprime())    
-
+    """
+    
     ########################################################################################################################
-    files = ['a_rating_data.in', 'd_rating_data.in', 'h_rating_data.in']
+    files = ['a_rating_data.in'] #, 'd_rating_data.in', 'h_rating_data.in']
     for input_file in files:
         print("processing.....................................", input_file)
         with open(input_file) as f:
             content = f.readlines()
-            for i in range(0, len(content), 2):
-                hit_line, fa_line = content[i+1], content[i]
-                hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)            
-                fa_list = list(map(lambda x: x.strip('\n'), fa_line.split("\t")))          
+            fa_line = content[0]
+            fa_list = list(map(lambda x: x.strip('\n'), fa_line.split("\t")))
+            
+            for i in range(1, 3): # len(content), 1):
+                hit_line = content[i]
+                hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)
+                
                 print(hit_list[0], fa_list[0])
                 tpr, fpr = hit_list[1:], fa_list[1:]
                 tpr = list(map(lambda x: float(x), tpr))
                 fpr = list(map(lambda x: float(x), fpr))
+                tpr_cum, fpr_cum = get_cumul_z(tpr), get_cumul_z(fpr)
                 fname = input_file.split('_')[0] + "_" + hit_list[0].replace(":", "_") # a_V1_No Delay error (3 sec.)        
-                plot_roc_curve(fpr, tpr, fname, True)
-    """
+                
+                # set grid and color 
+                fig = plt.figure(tight_layout=True)
+                gs = gridspec.GridSpec(3, 9)
+                n = 100
+                # get colormap
+                cmap=plt.cm.Pastel1
+                # build cycler with 5 equally spaced colors from that colormap
+                c = cycler('color', cmap(np.linspace(0,1,5)) )
+                # supply cycler to the rcParam
+                plt.rcParams["axes.prop_cycle"] = c
+                                
+
+                # # draw roc curve
+                ax = fig.add_subplot(gs[1, :3])
+                plot_roc_curve(fpr_cum, tpr_cum, fname, ax, True)
+                
+                # draw sdt distribution
+                ax = fig.add_subplot(gs[0:, 3:])
+                draw_sdt(tpr, fpr, ax)
+                
+
+                plt.show()
+                #file_name = var.split("_")[0] + "/" + var + '.png'
+                #print(file_name)
+                #f.savefig(file_name, bbox_inches='tight')
+                
 
 
     # What do I need?
@@ -149,9 +192,6 @@ if __name__ == "__main__":
     # convert x (ms, wpm, mw) to a z-score for the given 'signal' type.
     # then get the c value probabilities p(H) and p(FA)
 
-
-    
-
     # v15_overall
     dprime = 0.330
     c = 0.111
@@ -159,37 +199,8 @@ if __name__ == "__main__":
     #dprime = -0.299
     #c = 0.426
     
+    """
 
-    # # Display the probability density function (pdf)
-    # x = np.linspace(-5, 5, 100)     # define a big enough x interval 
-    # fig, ax = plt.subplots(1, 1, figsize=(7,5))
-
-    # noise_pdf = norm.pdf(x)
-    # error_pdf = norm.pdf(x, dprime, 1)              # get the norm.pdf for x interval
-    # plt.plot(x, noise_pdf, "g", alpha=0.5, label="noise") #fill
-    # plt.plot(x, error_pdf, "r", alpha=0.5, label="error")
-    # plt.axvline(x=c, color='m', linestyle='-.') #, label="c= "+str(c))
-    # plt.text(c+0.01, 0.01, "c= "+str(c))
-
-    # plt.vlines(0, 0, 0.4, color='c', linestyle=':')
-    # plt.vlines(dprime, 0, 0.4, color='c', linestyle=':')
-    # plt.hlines(0.4, 0, dprime) #, label="d'= "+str(dprime))
-    # plt.text(dprime, 0.405, "d'= "+str(dprime), fontsize=10)
-    
-    # ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='green', alpha=0.15, label="hit") # , interpolate=True)
-    # ax.fill_between(x, noise_pdf, 0, where=x > c, facecolor='red', alpha=0.15, label="false alarm") #, interpolate=True)
-    # ax.fill_between(x, noise_pdf, error_pdf, where=x < c, facecolor='blue', alpha=0.15, label="correct rejection") # , interpolate=True)
-    # ax.fill_between(x, error_pdf, 0, where=x < c, facecolor='orange', alpha=0.15, label="miss") #, interpolate=True)
-
-    # ax.set_xlim([-5,5])
-    # ax.set_ylim([0, 0.5])
-    # ax.set_title("Probability Distribution", fontsize=14)
-    # ax.set_ylabel('Probability Density', fontsize=12)
-    # ax.set_xlabel('Z-score', fontsize=12)
-    # ax.legend()
-
-    # plt.tight_layout()
-    # plt.show()
 
     
     # given two points, get the mapping equation from raw value to z-score.
@@ -212,12 +223,12 @@ if __name__ == "__main__":
     #     print(i, line.solve(i))
 
     # V5: 1 HF Missing word
-    data = ((1, -0.236), (0, 0))
-    line = Line(data) 
-    for i in range(0,10,1):
-        print(i, line.solve(i))
+    # data = ((1, -0.236), (0, 0))
+    # line = Line(data) 
+    # for i in range(0,10,1):
+    #     print(i, line.solve(i))
 
-
+    """
 
 
 
