@@ -25,52 +25,44 @@ from line import Line
 
 
 
-
-
-def draw_sdt(tpr, fpr, ax): # false-positive rate (noise), true-positive rate (signal hit), in z scores
+def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positive rate (signal hit), in z scores
     # Display the probability density function (pdf)
-    x = np.linspace(-5, 5, 100)     # define a big enough x interval 
+    x = np.linspace(-5, 5, 500)     # define a big enough x interval 
 
-    # get p(H) and p(FA)
-    pHit, pFA = 0, 0
-    for i in range(5):
-        pHit += tpr[i]        
-
-    for i in range(5):
-        pFA += fpr[i]        
-
-    # calculate d'
-    zHit, zFA = norm.ppf(pHit), norm.ppf(pFA)
-    dprime = zHit - zFA
-
-    # calculate c
-    c = -1 * (zHit + zFA) / 2
-    
     noise_pdf = norm.pdf(x)
-    error_pdf = norm.pdf(x, dprime, 1)              # get the norm.pdf for x interval
+    error_pdf = norm.pdf(x, sdt_obj.dprime(), 1)              # get the norm.pdf for x interval
     ax.plot(x, noise_pdf, "g", alpha=0.9, label="noise")
     ax.plot(x, error_pdf, "r", alpha=0.9, label="error")
 
-    plt.axvline(x=c, linestyle='-.') #, label="c= "+str(c))
-    plt.text(c+0.01, 0.01, "c= "+str(c))
+    plt.axvline(x=sdt_obj.c(), linestyle='-.') #, label="c= "+str(c))
+    plt.text(c+0.01, 0.01, "c= " + '{:{width}.{prec}f}'.format(sdt_obj.c(), width=5, prec=3))
 
-    plt.vlines(0, 0, 0.4, linestyle=':')
-    plt.vlines(dprime, 0, 0.4, linestyle=':')
-    plt.hlines(0.4, 0, dprime) #, label="d'= "+str(dprime))
-    plt.text(dprime, 0.405, "d'= "+str(dprime), fontsize=10)
-
+    plt.vlines(0, 0, 0.4, linestyle='--', color="m")
+    plt.vlines(sdt_obj.dprime(), 0, 0.4, linestyle='--', color="m")
+    plt.hlines(0.4, 0, sdt_obj.dprime())
+    plt.text(sdt_obj.dprime(), 0.405, "d'= " + '{:{width}.{prec}f}'.format(sdt_obj.dprime(), width=5, prec=3))
 
     # calculate c for each confidence level
-    tpr_cum, fpr_cum = get_cumul_z(tpr), get_cumul_z(fpr)
-    ztpr_r = list(map(lambda x: norm.ppf(x), tpr_cum))
-    zfpr_r = list(map(lambda x: norm.ppf(x), fpr_cum))
-    dprime_r = []
-    c_r = []
+    ztpr_r = list(map(lambda x: norm.ppf(x), get_cumul_z(tpr)))
+    zfpr_r = list(map(lambda x: norm.ppf(x), get_cumul_z(fpr)))
+    dprime_r, c_r = [], []
+    
     for i in range(len(ztpr_r)):
         if ztpr_r[i]:
-            dprime_r.append(ztpr_r[i]-zfpr_r[i])
+            dprime_r.append( ztpr_r[i] - zfpr_r[i] )
             c_r.append(-1 * ( ztpr_r[i] + zfpr_r[i] ) / 2)
     
+    
+
+
+    print(dprime_r)
+    
+
+
+    print(c_r)
+
+
+
     for i in c_r:
         if not math.isnan(i) and not math.isinf(i):
             plt.vlines(i, 0, 0.4, linestyle=':')
@@ -86,32 +78,26 @@ def draw_sdt(tpr, fpr, ax): # false-positive rate (noise), true-positive rate (s
     #     ax.fill_between(x, error_pdf, 0, where=x < c, facecolor='blue', alpha=0.15, label="correct rejection")
     #     ax.fill_between(x, error_pdf, noise_pdf, where=x < c, facecolor='orange', alpha=0.15, label="miss", hatch="/")
 
-
     ax.set_xlim([-5,5])
     ax.set_ylim([0, 0.5])
     ax.set_title("Probability Distribution", fontsize=14)
     ax.set_ylabel('Probability Density', fontsize=12)
     ax.set_xlabel('Z-score', fontsize=12)
     ax.legend()
-
     return ax
 
-    
 def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
     if p:
         x = np.linspace(0, 1, 100)
         coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
         ffit = poly.polyval(x, coefs)
         ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
-    
-    ax.plot(fpr, tpr, label='ROC', marker='.') #, linestyle="None")
-    # guide line     
-    ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0")
+    ax.plot(fpr, tpr, label='ROC', marker='.') #, linestyle="None")    
+    ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0") # guide line
     ax.set_xlabel('False-Alarm Rate')
     ax.set_ylabel('Hit Rate')
-    ax.set_title(var + "-" + 'Receiver Operating Characteristic (ROC) Curve')
+    ax.set_title(var + "-" + 'ROC Curve')
     ax.legend(loc='best')
-    
     return ax
 
 def get_cumul_z(rate):
@@ -122,65 +108,59 @@ def get_cumul_z(rate):
     return tmp
 
 if __name__ == "__main__":
-    """
-    d_prime = dPrime(18, 12, 3, 27)
-    print(d_prime) # should be -153.49%
-
-    ### using sdt_metrics library
-    hi,mi,cr,fa = 18, 12, 3, 27
-    print(dprime(hi,mi,cr,fa))
-
-    sdt_obj = SDT(HI=18, MI=12, CR=3, FA=27)
-    #print(sdt_obj)
-    print(sdt_obj.c())
-    print(sdt_obj.dprime())    
-    """
-    
     ########################################################################################################################
-    files = ['a_rating_data.in'] #, 'd_rating_data.in', 'h_rating_data.in']
+    files = ['input/a_rating_data.in'] #, 'input/d_rating_data.in', 'input/h_rating_data.in']
     for input_file in files:
         print("processing.....................................", input_file)
         with open(input_file) as f:
             content = f.readlines()
             fa_line = content[0]
             fa_list = list(map(lambda x: x.strip('\n'), fa_line.split("\t")))
-            
-            for i in range(1, 3): # len(content), 1):
-                hit_line = content[i]
-                hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)
+            fa_list = fa_list[:1] + list(map(lambda x: float(x), fa_list[1:])) # conversion to float
+            false_alarm, correct_rejection = sum(fa_list[1:6]), sum(fa_list[6:]) # get summary values for fa and cr
+            for i in range(1, len(fa_list[1:])):
+                fa_list[i] = fa_list[i] / (false_alarm + correct_rejection)
                 
-                print(hit_list[0], fa_list[0])
+            for line in range(1, 4): # len(content), 1):
+                hit_line = content[line]
+                hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)
+                hit_list = hit_list[:1] + list(map(lambda x: float(x), hit_list[1:])) #convert to float
+                hit, miss = sum(hit_list[1:6]), sum(hit_list[6:]) # get hit and miss
+                
+                sdt_obj = SDT(HI=hit, MI=miss, CR=correct_rejection, FA=false_alarm)
+                print(sdt_obj, "d'=" + str(sdt_obj.dprime()), "c=" + str(sdt_obj.c()))
+                
+                # Now lets create a list with the rates of hit and false alarm
+                for i in range(1, len(hit_list[1:])):
+                    hit_list[i] = hit_list[i] / (hit + miss)
+                
                 tpr, fpr = hit_list[1:], fa_list[1:]
-                tpr = list(map(lambda x: float(x), tpr))
-                fpr = list(map(lambda x: float(x), fpr))
                 tpr_cum, fpr_cum = get_cumul_z(tpr), get_cumul_z(fpr)
-                fname = input_file.split('_')[0] + "_" + hit_list[0].replace(":", "_") # a_V1_No Delay error (3 sec.)        
+                fname = input_file.split('_')[0] + "_" + hit_list[0].replace(":", "_") # a_V1_No Delay error (3 sec.)
                 
                 # set grid and color 
                 fig = plt.figure(tight_layout=True)
                 gs = gridspec.GridSpec(3, 9)
                 n = 100
                 # get colormap
-                cmap=plt.cm.Pastel1
+                cmap=plt.cm.coolwarm
                 # build cycler with 5 equally spaced colors from that colormap
                 c = cycler('color', cmap(np.linspace(0,1,5)) )
                 # supply cycler to the rcParam
                 plt.rcParams["axes.prop_cycle"] = c
                                 
-
                 # # draw roc curve
                 ax = fig.add_subplot(gs[1, :3])
                 plot_roc_curve(fpr_cum, tpr_cum, fname, ax, True)
                 
                 # draw sdt distribution
                 ax = fig.add_subplot(gs[0:, 3:])
-                draw_sdt(tpr, fpr, ax)
+                draw_sdt(tpr, fpr, sdt_obj, ax)
                 
-
                 plt.show()
-                #file_name = var.split("_")[0] + "/" + var + '.png'
-                #print(file_name)
-                #f.savefig(file_name, bbox_inches='tight')
+                # file_name = "img/" + var.split("_")[0] + "/" + var + '.png'
+                # print(file_name)
+                # f.savefig(file_name, bbox_inches='tight')
                 
 
 
