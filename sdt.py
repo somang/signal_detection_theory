@@ -17,7 +17,6 @@ from cycler import cycler
 from scipy import stats
 from scipy.stats import norm
 
-
 import math
 from math import exp,sqrt,pi
 
@@ -35,7 +34,7 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
     ax.plot(x, error_pdf, "r", alpha=0.9, label="error")
 
     plt.axvline(x=sdt_obj.c(), linestyle='-.') #, label="c= "+str(c))
-    plt.text(c+0.01, 0.01, "c= " + '{:{width}.{prec}f}'.format(sdt_obj.c(), width=5, prec=3))
+    plt.text(sdt_obj.c() + 0.01, 0.01, "c= " + '{:{width}.{prec}f}'.format(sdt_obj.c(), width=5, prec=3))
 
     plt.vlines(0, 0, 0.4, linestyle='--', color="m")
     plt.vlines(sdt_obj.dprime(), 0, 0.4, linestyle='--', color="m")
@@ -143,11 +142,11 @@ if __name__ == "__main__":
                 gs = gridspec.GridSpec(3, 9)
                 n = 100
                 # get colormap
-                cmap=plt.cm.coolwarm
+                #cmap=plt.cm.coolwarm
                 # build cycler with 5 equally spaced colors from that colormap
-                c = cycler('color', cmap(np.linspace(0,1,5)) )
+                #c = cycler('color', cmap(np.linspace(0,1,5)) )
                 # supply cycler to the rcParam
-                plt.rcParams["axes.prop_cycle"] = c
+                #plt.rcParams["axes.prop_cycle"] = c
                                 
                 # # draw roc curve
                 ax = fig.add_subplot(gs[1, :3])
