@@ -47,20 +47,8 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
     dprime_r, c_r = [], []
     
     for i in range(len(ztpr_r)):
-        if ztpr_r[i]:
-            dprime_r.append( ztpr_r[i] - zfpr_r[i] )
-            c_r.append(-1 * ( ztpr_r[i] + zfpr_r[i] ) / 2)
-    
-    
-
-
-    print(dprime_r)
-    
-
-
-    print(c_r)
-
-
+        dprime_r.append( ztpr_r[i] - zfpr_r[i] )
+        c_r.append(-1 * ( ztpr_r[i] + zfpr_r[i] ) / 2)
 
     for i in c_r:
         if not math.isnan(i) and not math.isinf(i):
@@ -108,7 +96,7 @@ def get_cumul_z(rate):
 
 if __name__ == "__main__":
     ########################################################################################################################
-    files = ['input/a_rating_data.in'] #, 'input/d_rating_data.in', 'input/h_rating_data.in']
+    files = ['input/a_rating_data.in', 'input/d_rating_data.in', 'input/h_rating_data.in']
     for input_file in files:
         print("processing.....................................", input_file)
         with open(input_file) as f:
@@ -120,14 +108,14 @@ if __name__ == "__main__":
             for i in range(1, len(fa_list[1:])):
                 fa_list[i] = fa_list[i] / (false_alarm + correct_rejection)
                 
-            for line in range(1, 4): # len(content), 1):
+            for line in range(1, len(content), 1):
                 hit_line = content[line]
                 hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t"))) # map(function_to_apply, list_of_inputs)
                 hit_list = hit_list[:1] + list(map(lambda x: float(x), hit_list[1:])) #convert to float
                 hit, miss = sum(hit_list[1:6]), sum(hit_list[6:]) # get hit and miss
                 
                 sdt_obj = SDT(HI=hit, MI=miss, CR=correct_rejection, FA=false_alarm)
-                print(sdt_obj, "d'=" + str(sdt_obj.dprime()), "c=" + str(sdt_obj.c()))
+                #print(sdt_obj, "d'=" + str(sdt_obj.dprime()), "c=" + str(sdt_obj.c()))
                 
                 # Now lets create a list with the rates of hit and false alarm
                 for i in range(1, len(hit_list[1:])):
@@ -157,9 +145,11 @@ if __name__ == "__main__":
                 draw_sdt(tpr, fpr, sdt_obj, ax)
                 
                 plt.show()
-                # file_name = "img/" + var.split("_")[0] + "/" + var + '.png'
-                # print(file_name)
-                # f.savefig(file_name, bbox_inches='tight')
+                head = input_file.split("/")[1].split("_")[0]
+                file_name = "img/" + head + "/" + head + "_" + hit_list[0] + '.png'
+                plt.savefig(file_name, bbox_inches='tight')
+                print(file_name)
+                plt.close()
                 
 
 
