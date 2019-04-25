@@ -21,6 +21,7 @@ import math
 from math import exp,sqrt,pi
 
 from line import Line
+import re
 
 
 
@@ -126,7 +127,7 @@ if __name__ == "__main__":
                 fname = input_file.split('_')[0] + "_" + hit_list[0].replace(":", "_") # a_V1_No Delay error (3 sec.)
                 
                 # set grid and color 
-                fig = plt.figure(tight_layout=True)
+                fig = plt.figure() #tight_layout=True)
                 gs = gridspec.GridSpec(3, 9)
                 n = 100
                 # get colormap
@@ -144,11 +145,13 @@ if __name__ == "__main__":
                 ax = fig.add_subplot(gs[0:, 3:])
                 draw_sdt(tpr, fpr, sdt_obj, ax)
                 
-                plt.show()
-                head = input_file.split("/")[1].split("_")[0]
-                file_name = "img/" + head + "/" + head + "_" + hit_list[0] + '.png'
-                plt.savefig(file_name, bbox_inches='tight')
+                #plt.show()
+                head = input_file.split("/")[1].split("_")[0]             
+                imgfname = re.sub(r":| ", "_", hit_list[0])
+                file_name = "img/" + head + "/" + head + "_" + imgfname + '.png'
                 print(file_name)
+
+                #plt.savefig(file_name, bbox_inches='tight')
                 plt.close()
                 
 
