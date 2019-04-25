@@ -114,18 +114,20 @@ def process_db(acceptable_id):
             else:
                 caption_set[caption_var][question][answer] += 1
         
+    print(caption_set[caption_var]['caption quality'])
+        
     sum_list = []
     for i, v in sorted(caption_set.items(), key=lambda x: int(x[0])):
-        print("Variation #" + i)
+        # print("Variation #" + i)
         
-        print('Yes', caption_set[i]['error detection']['Yes'])
+        # print('Yes', caption_set[i]['error detection']['Yes'])
         conf_label, conf_lvl, yn_label = [], [], []
         for l in caption_set[i]['confidence level']['Yes']:
             yn_label.append('Yes error detected in the CC.')
             conf_label.append(l)
             conf_lvl.append(caption_set[i]['confidence level']['Yes'][l])
 
-        print('No', caption_set[i]['error detection']['No'])        
+        # print('No', caption_set[i]['error detection']['No'])        
         conf_label_no, conf_lvl_no, yn_label_no = [], [], []
         for l in caption_set[i]['confidence level']['No']:
             yn_label_no.append('No error in the CC.')
@@ -145,8 +147,8 @@ def process_db(acceptable_id):
             sum_list.append(conf_label)            
         sum_list.append(conf_lvl)
         
-        print(conf_label)
-        print(conf_lvl)
+        # print(conf_label)
+        # print(conf_lvl)
         print('---------------------------------------------------')
     
     return sum_list
