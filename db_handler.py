@@ -8,6 +8,48 @@ def connect(sqlite_file):
     c = conn.cursor()
     return conn, c
 
+
+def getq1q3(acceptable_id):
+    n_userids = list(map(lambda x: x.strip(), acceptable_id.split(',')))    
+
+    user_filter = "(r.interview_uuid = "
+    for u in range(len(n_userids)):
+        if u < len(n_userids)-1:
+            user_filter += '"' + n_userids[u] + '" OR r.interview_uuid = '
+        else:
+            user_filter += '"' + n_userids[u] + '")'
+
+    # now we connect database to extract some data into excel file.
+    sqlite_file = 'db.sqlite3'
+    conn, cur = connect(sqlite_file)
+    
+    #####################################################
+    ### Now, let's see what I can do with the data.
+    query = query = "SELECT DISTINCT r.interview_uuid, b.question_id, b.category, r.created, q.text, a.body, a.caption_var " +\
+    "FROM ccvsite_response AS r, ccvsite_answerbase AS b, ccvsite_answerradio AS a, ccvsite_question AS q " +\
+    "ON (r.id = b.response_id AND a.answerbase_ptr_id = b.id AND b.question_id = q.id)" +\
+    " WHERE " + user_filter + " AND " +\
+    "(q.TEXT = 'Did you see any errors in the caption?' OR q.TEXT = 'How would you rate the quality of the caption?')"
+    
+    cur.execute(query)
+    table = cur.fetchall()
+
+
+
+    # calculate the cognitive score
+    # if a person detects an error, it will be 'yes' otherwise 'no'
+    # 'yes' = 1, and 'no' = -1
+    # then, the five confidence level can be considered as weights
+    #
+    # Q2: I am confident that my decision is correct:
+    # '1. Strongly disagree', '2. Disagree', '3. Neither agree nor disagree', '4. Agree', '5. Strongly agree'
+    #
+    # 
+    
+
+    return table
+
+
 def process_db(acceptable_id):
     n_userids = list(map(lambda x: x.strip(), acceptable_id.split(',')))    
 
@@ -33,6 +75,8 @@ def process_db(acceptable_id):
 
     ansset_1 = ['1. Yes', '2. No']
     ansset_2 = ['1. Strongly disagree', '2. Disagree', '3. Neither agree nor disagree', '4. Agree', '5. Strongly agree']
+    ansset_3 = ['1. Strongly dissatisfied', '2. Dissatisfied', '3. Neither satisfied nor dissatisfied', '4. Satisfied', '5. Strongly satisfied']
+
     conditions = ['2. I identify as Deaf', '3. I am Deafened','4. I am Hard of Hearing']
 
     caption_set = {}
@@ -107,26 +151,23 @@ def process_db(acceptable_id):
 
         # add count.        
         if caption != "demo" and caption != None:
-            if answer in ansset_2:
+            if answer in ansset_2: # confidence level is related to yes or no
                 caption_set[caption_var][question][prev_answer][answer] += 1     
-            elif answer in conditions:
-                caption_set[caption_var][question][answer] += 1                       
-            else:
-                caption_set[caption_var][question][answer] += 1
-        
-    print(caption_set[caption_var]['caption quality'])
+            else: # others, just count.
+                caption_set[caption_var][question][answer] += 1       
+    
+    for v in caption_set:
+        print(v, caption_set[v]['caption quality'])
         
     sum_list = []
     for i, v in sorted(caption_set.items(), key=lambda x: int(x[0])):
-        # print("Variation #" + i)
-        
+        # print("Variation #" + i)        
         # print('Yes', caption_set[i]['error detection']['Yes'])
         conf_label, conf_lvl, yn_label = [], [], []
         for l in caption_set[i]['confidence level']['Yes']:
             yn_label.append('Yes error detected in the CC.')
             conf_label.append(l)
             conf_lvl.append(caption_set[i]['confidence level']['Yes'][l])
-
         # print('No', caption_set[i]['error detection']['No'])        
         conf_label_no, conf_lvl_no, yn_label_no = [], [], []
         for l in caption_set[i]['confidence level']['No']:
@@ -149,7 +190,7 @@ def process_db(acceptable_id):
         
         # print(conf_label)
         # print(conf_lvl)
-        print('---------------------------------------------------')
+        # print('---------------------------------------------------')
     
     return sum_list
         
@@ -162,7 +203,8 @@ if __name__ == "__main__":
         4f365caeba754ce2b64c05fe8bbf1b83, a0daa2a0a5334b1eb0167d437ee17cab, 2624763b44f74dee9296c724a89da38e,\
         213eb57e4d79488e97473d8269e21eaa, a5d0904aa4314081b4ebdf162f5e1ca0, 6516592bdd1c419e9510415b36121bea,\
         0c652f0835d04677adc6164fea034be2, 1b5e6927654a41bfacb38df795f65661, 7da0e901d854419da76b97e11ddbb1f5,\
-        d45dad5247f4454aa317a3e314253fc4, 90bfe0ce60524ebd8fb127aa36f51b97, d1a31b5badc24250b424541b1441e524"
+        d45dad5247f4454aa317a3e314253fc4, 90bfe0ce60524ebd8fb127aa36f51b97, d1a31b5badc24250b424541b1441e524,\
+        6f8058a8a12f4e0bb38501c978660fec, 4cd7b30031ef472bb6a590c2292a5295"
     
     deafened = "66e402d9d26542a39eb5242b76f96740, 1f3cf84fcb234574a0a0b3b55c9a6002, cbceee500b0844fc8665c59fb8268b87,\
         38dc1612584c4e33a2abd62451924d8c, 64c99d37023e4b25993a8b3a2b849bb1, 9f0bc4b929e44db9a5d36773978276a1,\
@@ -174,36 +216,17 @@ if __name__ == "__main__":
         b7339943af1c4ee2b3bba8ba5e08c05b, fe412c5ac1544fd6aa627bdcf06b7982, ff0696e0e2bc4755af2215a733a5e292,\
         d51835f3aaa14e2b81a9f5c4fbacdaa2, 836ce291e0424e24bf38d60d0e2f5acf, 8ad718b2f12a4a7eaae9d26940ea4cfe,\
         8c3a587490834d43a6a6ddbfdf516a69, 6de765e89afe4ea6912ff3745b72d4a4, c45917462fad443fb0555ee51b5d3727,\
-        60461644d8714d728dbbac307516c6ad, c6197608a4f1477ca6c6c0c17a3b976d, f3727975ca684e549b059aec62634e0b"
-    
-    # suspicious = "1f3cf84fcb234574a0a0b3b55c9a6002, cbceee500b0844fc8665c59fb8268b87, 38dc1612584c4e33a2abd62451924d8c,\
-    #     1ccd0d04e4c24a9d9a28fcd7bfe5cb83, 9de393c400c4499f98717997361f2fed, c682e11225244671b7ba1e21852b2da0,\
-    #     20807d3f6bdc47cf9a59a4c986aea10a, ff0696e0e2bc4755af2215a733a5e292"
-
-    # mturk_deaf = "829843c8d16a4276b763dbd42d3529b7, 8ff52b0e75d444c6ae2ea36fa705b11e, 02b36ada868644588194b1686896d0a9,\
-    #     9de393c400c4499f98717997361f2fed, eecfe1dae11b4cf2b09fe6c1e54774b5, c682e11225244671b7ba1e21852b2da0,\
-    #     4f75600ef70c4f58803c5d4a4e3285b9, fe412c5ac1544fd6aa627bdcf06b7982,ff0696e0e2bc4755af2215a733a5e292"
-
-    # deaf = "35c2446de1b6479584470bff75dc45ee, 14ac5c3930164d67839097d8f64449af,\
-    #     b7339943af1c4ee2b3bba8ba5e08c05b,\
-    #     d51835f3aaa14e2b81a9f5c4fbacdaa2, 836ce291e0424e24bf38d60d0e2f5acf, 8ad718b2f12a4a7eaae9d26940ea4cfe,\
-    #     8c3a587490834d43a6a6ddbfdf516a69, 6de765e89afe4ea6912ff3745b72d4a4, c45917462fad443fb0555ee51b5d3727,\
-    #     60461644d8714d728dbbac307516c6ad, c6197608a4f1477ca6c6c0c17a3b976d, f3727975ca684e549b059aec62634e0b"
-
-    # hoh = "981c026156904ab09124ecf24f22f308, ef7d53853ffa4de1a0ce9d5ccc62d90e, 8842de8026bb41dfbbda4c4449533432,\
-    #     4f365caeba754ce2b64c05fe8bbf1b83, a0daa2a0a5334b1eb0167d437ee17cab, 2624763b44f74dee9296c724a89da38e,\
-    #     213eb57e4d79488e97473d8269e21eaa, a5d0904aa4314081b4ebdf162f5e1ca0, 6516592bdd1c419e9510415b36121bea,\
-    #     0c652f0835d04677adc6164fea034be2, 1b5e6927654a41bfacb38df795f65661, 7da0e901d854419da76b97e11ddbb1f5,\
-    #     d45dad5247f4454aa317a3e314253fc4, 90bfe0ce60524ebd8fb127aa36f51b97, d1a31b5badc24250b424541b1441e524"
-    
-    # deafened = "66e402d9d26542a39eb5242b76f96740, 64c99d37023e4b25993a8b3a2b849bb1, 9f0bc4b929e44db9a5d36773978276a1, e168d926f2a640aebb9048da56ed812e"
-    
+        60461644d8714d728dbbac307516c6ad, c6197608a4f1477ca6c6c0c17a3b976d, f3727975ca684e549b059aec62634e0b,\
+        345840ed98f7417aa57d086a191bc4d3, f305687534ea4f17b28d22dfb983c28e, 82e5bd330ad24854a0741ac9012b4d9d,\
+        c2eabd1d73d1495f9c9bdfc5517467a1, 63adfe6057c4428098e730d0bb147b34" #updated april 28
 
     hearing_groups = {
         "all": deafened + ", " + hoh + ", " + deaf,
         "deaf": deaf,
         "hoh_deafened": deafened + ", " + hoh
     }
+
+
 
     workbook = Workbook('output.xlsx')
     for i in hearing_groups:
@@ -214,6 +237,19 @@ if __name__ == "__main__":
             row = all_list[r]
             for c in range(len(row)): # for each column
                 worksheet.write(r,c,row[c]) # row, col, message
+
+    workbook.close()
+
+    workbook = Workbook('q1q3_results.xlsx')
+    for i in hearing_groups:
+        worksheet = workbook.add_worksheet(i)
+        all_list = getq1q3(hearing_groups[i])
+
+        for r in range(len(all_list)): # for each row
+            row = all_list[r]
+            for c in range(len(row)): # for each column
+                worksheet.write(r,c,row[c]) # row, col, message
     
     workbook.close()
     print("done exporting.")
+
