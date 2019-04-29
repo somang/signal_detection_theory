@@ -25,27 +25,16 @@ def getq1q3(acceptable_id):
     
     #####################################################
     ### Now, let's see what I can do with the data.
-    query = query = "SELECT DISTINCT r.interview_uuid, b.question_id, b.category, r.created, q.text, a.body, a.caption_var " +\
+    query = query = "SELECT DISTINCT r.interview_uuid, q.text, a.body, a.caption_var " +\
     "FROM ccvsite_response AS r, ccvsite_answerbase AS b, ccvsite_answerradio AS a, ccvsite_question AS q " +\
     "ON (r.id = b.response_id AND a.answerbase_ptr_id = b.id AND b.question_id = q.id)" +\
     " WHERE " + user_filter + " AND " +\
-    "(q.TEXT = 'Did you see any errors in the caption?' OR q.TEXT = 'How would you rate the quality of the caption?')"
+    "(q.text = 'Did you see any errors in the caption?' OR q.text = 'I am confident that my decision was correct:' OR " +\
+    "q.text = 'How would you rate the quality of the caption?')"
     
     cur.execute(query)
     table = cur.fetchall()
 
-
-
-    # calculate the cognitive score
-    # if a person detects an error, it will be 'yes' otherwise 'no'
-    # 'yes' = 1, and 'no' = -1
-    # then, the five confidence level can be considered as weights
-    #
-    # Q2: I am confident that my decision is correct:
-    # '1. Strongly disagree', '2. Disagree', '3. Neither agree nor disagree', '4. Agree', '5. Strongly agree'
-    #
-    # 
-    
 
     return table
 
@@ -156,8 +145,8 @@ def process_db(acceptable_id):
             else: # others, just count.
                 caption_set[caption_var][question][answer] += 1       
     
-    for v in caption_set:
-        print(v, caption_set[v]['caption quality'])
+    # for v in caption_set:
+    #     print(v, caption_set[v]['caption quality'])
         
     sum_list = []
     for i, v in sorted(caption_set.items(), key=lambda x: int(x[0])):
