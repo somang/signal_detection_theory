@@ -169,7 +169,6 @@ for sn in xl.sheet_names:
         if not variations[quiz][caption_var].get(uuid):
             variations[quiz][caption_var][uuid] = (video, answer)
 
-
     ## lets calculate t-tests over the columns we want,
     #q1 = variations["Did you see any errors in the caption?"]
     #ttest_result = list(map(lambda x: get_t_map(q1, 1, x), range(2,24))) # ttest( v1 , (v2-v23) )
@@ -185,82 +184,79 @@ for sn in xl.sheet_names:
         uids.append(uid)
     
     for q in variations: # for each question
-        qz, qz_video, nar_q, no_nar_q = [], [], [], []
+        qz, qz_video, q_nar, q_nonar = [], [], [], []
         head_row = ["uuid"]
         first = True
         for u in uids: # for each user
-            row, vid_row, nar_r, no_nar_r = [u], [u], [u], [u]
+            row, vid_row, r_nar, r_nonar = [u], [u], [u], [u]
             
             for n in range(1, 24): # from variation 1 to 23            
-                variation_n = str(n)
+                variation_n = str(n) # convert to string value
+                ans = (100, "") # initialization
                 if first:
                     head_row.append(variation_n)
-                ans = (100, "")
-                
-                # if n < 23: # because v23 was not added for some user
-                #     ans = variations[q][variation_n][u] # add the answer of this user at this variation.
-                    
-                    # if nar[q][variation_n].get(u):
-                    #     ans = nar[q][variation_n][u]
-                    #     nar_q.append(ans[1])
-                    #     print("nar", u, variation_n, nar[q][variation_n][u])
 
-                    # elif no_nar[q][variation_n].get(u):
-                    #     ans = no_nar[q][variation_n][u]
-                    #     no_nar_q.append(ans[0])
-                    #     print("no nar", u, variation_n, no_nar[q][variation_n][u])
+                if nar[q][variation_n].get(u):
+                    ans = nar[q][variation_n][u] # ('v15', '1. Strongly dissatisfied')
+                    r_nar.append(to_score(ans[1]))
+                else:
+                    r_nar.append(" ")
 
-                #elif n == 23:
+                if no_nar[q][variation_n].get(u):
+                    ans = no_nar[q][variation_n][u]
+                    r_nonar.append(to_score(ans[1]))
+                else:
+                    r_nonar.append(" ") # pad with a dummy number if not existing
+
+
+
                 if variations[q][variation_n].get(u):
                     ans = variations[q][variation_n][u]
+                    row.append(to_score(ans[1]))
+                    vid_row.append(ans[0])
 
-                row.append(to_score(ans[1]))
-                vid_row.append(ans[0])
-            if first:
+            if first: # add the headers
                 qz.append(head_row)
                 qz_video.append(head_row)
-                nar_q.append(head_row)
-                no_nar_q.append(head_row)
-                first = False            
+                q_nar.append(head_row)
+                q_nonar.append(head_row)
+                first = False
+
             qz.append(row) # for each row, it will have a username, along with the answers for each variation number 1-23
             qz_video.append(vid_row)
-            nar_q.append(nar_r)
-            no_nar_q.append(no_nar_r)
+            q_nar.append(r_nar)
+            q_nonar.append(r_nonar)
 
         all_list.append(qz)# add the row to the queue
         all_list_video.append(qz_video)
-        nar_list.append(nar_q)
-        no_nar_list.append(no_nar_q)
+        nar_list.append(q_nar)
+        no_nar_list.append(q_nonar)
 
 
     worksheet = workbook.add_worksheet('q1_' + sn)
     export_excel(worksheet, all_list[0])
-    worksheet = workbook.add_worksheet('q1_v_' + sn)
-    export_excel(worksheet, all_list_video[0])
-
     worksheet = workbook.add_worksheet('q2_' + sn)
     export_excel(worksheet, all_list[1])
-    worksheet = workbook.add_worksheet('q2_v_' + sn)
-    export_excel(worksheet, all_list_video[1])
-
     worksheet = workbook.add_worksheet('q3_' + sn)
     export_excel(worksheet, all_list[2])
-    worksheet = workbook.add_worksheet('q3_v_' + sn)
+    worksheet = workbook.add_worksheet('v_' + sn)
     export_excel(worksheet, all_list_video[2])
 
 
+    worksheet = workbook.add_worksheet('nar_q1' + sn)
+    export_excel(worksheet, nar_list[0])
+    worksheet = workbook.add_worksheet('nar_q2' + sn)
+    export_excel(worksheet, nar_list[1])
+    worksheet = workbook.add_worksheet('nar_q3' + sn)
+    export_excel(worksheet, nar_list[2])
 
 
-
-
-
-
-
-
-
-
-
-
+    worksheet = workbook.add_worksheet('nonar_q1' + sn)
+    export_excel(worksheet, no_nar_list[0])
+    worksheet = workbook.add_worksheet('nonar_q2' + sn)
+    export_excel(worksheet, no_nar_list[1])
+    worksheet = workbook.add_worksheet('nonar_q3' + sn)
+    export_excel(worksheet, no_nar_list[2])
 
 
 # #     # now that we have the raw values, let's calculate the weighted scores.
