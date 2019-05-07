@@ -20,7 +20,7 @@ def to_score(answer):
     
     # calculate the cognitive score
     # if a person detects an error, it will be 'yes' otherwise 'no'
-    # 'yes' = 1, and 'no' = -1
+    # 'yes' = 1, and 'no' = 2
     # then, the five confidence level can be considered as weights
     #
     # Q2: I am confident that my decision is correct:
