@@ -4,7 +4,7 @@ import xlrd
 from xlrd import open_workbook
 import pandas
 from scipy.stats import shapiro
-
+from scipy.stats import mannwhitneyu
 
 from scipy import stats
 
@@ -65,20 +65,20 @@ def get_weight_score(x):
     if x[1] != None:
         return float(x[0]) * float(x[1])
     
-
 def get_t_map(question, v1, v2):
-    l1 = list(map(lambda x: to_score(x), question[str(v1)].values()))
-    l2 = list(map(lambda x: to_score(x), question[str(v2)].values()))
+    l1 = list(map(lambda x: to_score(x[1]), question[str(v1)].values()))
+    l2 = list(map(lambda x: to_score(x[1]), question[str(v2)].values()))
     return (v2, stats.ttest_ind(l1, l2))
-
-def get_t(question, v1, v2):
-    l1 = list(map(lambda x: to_score(x), question[str(v1)].values()))
-    l2 = list(map(lambda x: to_score(x), question[str(v2)].values()))
-    return stats.ttest_ind(l1, l2)
     
 def get_shapiro_map(question, v1):
-    l1 = list(map(lambda x: to_score(x), question[str(v1)].values()))
+    l1 = list(map(lambda x: to_score(x[1]), question[str(v1)].values()))
     return (v1, shapiro(l1))
+
+def get_mannwhitneyu_map(question, v1, v2):
+    l1 = list(map(lambda x: to_score(x[1]), question[str(v1)].values()))
+    l2 = list(map(lambda x: to_score(x[1]), question[str(v2)].values()))
+    return (v2, mannwhitneyu(l1, l2))
+
 
 workbook = Workbook('q1q3_handled.xlsx') # output
 
@@ -170,13 +170,39 @@ for sn in xl.sheet_names:
             variations[quiz][caption_var][uuid] = (video, answer)
 
     ## lets calculate t-tests over the columns we want,
-    #q1 = variations["Did you see any errors in the caption?"]
-    #ttest_result = list(map(lambda x: get_t_map(q1, 1, x), range(2,24))) # ttest( v1 , (v2-v23) )
-    #shapiro_result = list(map(lambda x: get_shapiro_map(q1, x), range(1, 24))) # check for normality
-    # for r in ttest_result:
-    #     print(str(r[1][1])) # variation vs t_result
-    # for s in shapiro_result:
-    #     print(str(s[1][1]))
+    for q in variations: #variations:
+        qmap = variations[q]
+        
+        shapiro_result = list(map(lambda x: get_shapiro_map(qmap, x), range(1, 24))) # check for normality
+        for s in shapiro_result:
+            p = s[1][1]
+            # interpret
+            alpha = 0.05
+            if p > alpha:
+                print(s, 'Sample looks Gaussian (fail to reject H0)')
+            # else: # p<.05, there's evidence that the data are not normally distributed
+            #     print(s, 'Sample does not look Gaussian (reject H0)')        
+        
+        mwu_result = list(map(lambda x: get_mannwhitneyu_map(qmap, 1, x), range(1, 24)))
+        for s in mwu_result:
+            p = s[1][1]
+            # interpret
+            alpha = 0.05
+            if p < alpha: # p<.05, evidence that two independent samples were NOT drawn from a population with the same distribution
+                print(s, 'Different distribution (reject H0)')
+            # else: 
+            #     print(s, 'Same distribution (fail to reject H0)')
+        
+        ttest_result = list(map(lambda x: get_t_map(qmap, 1, x), range(2,24))) # ttest( v1 , (v2-v23) )
+        for s in ttest_result:
+            p = s[1][1]
+            # interpret
+            alpha = 0.05
+            # interpret via p-value
+            if p < alpha:
+                print(s, 'Reject the null hypothesis that the means are equal.')        
+            # else:
+            #     print(s, 'Accept null hypothesis that the means are equal.')
 
     # now we have a sorted table.
     all_list_video, all_list, nar_list, no_nar_list, uids = [], [], [], [], []

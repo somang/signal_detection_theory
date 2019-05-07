@@ -39,6 +39,8 @@ def getq1q3(acceptable_id):
     return table
 
 
+
+
 def process_db(acceptable_id):
     n_userids = list(map(lambda x: x.strip(), acceptable_id.split(',')))    
 
@@ -67,6 +69,10 @@ def process_db(acceptable_id):
     ansset_3 = ['1. Strongly dissatisfied', '2. Dissatisfied', '3. Neither satisfied nor dissatisfied', '4. Satisfied', '5. Strongly satisfied']
 
     conditions = ['2. I identify as Deaf', '3. I am Deafened','4. I am Hard of Hearing']
+    
+
+    narrator_vid = ["v1", "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23"]
+    no_narrator_vid = ["v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9"]
 
     caption_set = {}
     for i in table:
@@ -138,12 +144,17 @@ def process_db(acceptable_id):
             caption_set[caption_var]['viewing pleasure']['4. Good'] = 0
             caption_set[caption_var]['viewing pleasure']['5. Excellent'] = 0
 
-        # add count.        
+
+
+        # add count.
         if caption != "demo" and caption != None:
-            if answer in ansset_2: # confidence level is related to yes or no
-                caption_set[caption_var][question][prev_answer][answer] += 1     
-            else: # others, just count.
-                caption_set[caption_var][question][answer] += 1       
+            #if caption[0] in no_narrator_vid:
+            if caption[0] in narrator_vid:
+
+                if answer in ansset_2: # confidence level is related to yes or no
+                    caption_set[caption_var][question][prev_answer][answer] += 1     
+                else: # others, just count.
+                    caption_set[caption_var][question][answer] += 1       
     
     # for v in caption_set:
     #     print(v, caption_set[v]['caption quality'])
