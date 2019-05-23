@@ -149,12 +149,12 @@ def process_db(acceptable_id):
         # add count.
         if caption != "demo" and caption != None:
             #if caption[0] in no_narrator_vid:
-            if caption[0] in narrator_vid:
-
-                if answer in ansset_2: # confidence level is related to yes or no
-                    caption_set[caption_var][question][prev_answer][answer] += 1     
-                else: # others, just count.
-                    caption_set[caption_var][question][answer] += 1       
+            #if caption[0] in narrator_vid:
+        
+            if answer in ansset_2: # confidence level is related to yes or no
+                caption_set[caption_var][question][prev_answer][answer] += 1     
+            else: # others, just count.
+                caption_set[caption_var][question][answer] += 1       
     
     # for v in caption_set:
     #     print(v, caption_set[v]['caption quality'])
@@ -208,7 +208,8 @@ if __name__ == "__main__":
     
     deafened = "66e402d9d26542a39eb5242b76f96740, 1f3cf84fcb234574a0a0b3b55c9a6002, cbceee500b0844fc8665c59fb8268b87,\
         38dc1612584c4e33a2abd62451924d8c, 64c99d37023e4b25993a8b3a2b849bb1, 9f0bc4b929e44db9a5d36773978276a1,\
-        1ccd0d04e4c24a9d9a28fcd7bfe5cb83, 20807d3f6bdc47cf9a59a4c986aea10a, e168d926f2a640aebb9048da56ed812e"
+        1ccd0d04e4c24a9d9a28fcd7bfe5cb83, 20807d3f6bdc47cf9a59a4c986aea10a, e168d926f2a640aebb9048da56ed812e,\
+        3c5d57ad132f45f3a746e94b6f48287, 6888aaf869084ba9a5fa2ab5aa3407a0"
     
     deaf = "829843c8d16a4276b763dbd42d3529b7, 8ff52b0e75d444c6ae2ea36fa705b11e, 02b36ada868644588194b1686896d0a9,\
         9de393c400c4499f98717997361f2fed, eecfe1dae11b4cf2b09fe6c1e54774b5, c682e11225244671b7ba1e21852b2da0,\
