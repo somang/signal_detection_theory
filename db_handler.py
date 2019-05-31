@@ -1,28 +1,23 @@
 import sqlite3
 from xlsxwriter.workbook import Workbook
 
-
 def connect(sqlite_file):
     """ Make connection to an SQLite database file """
     conn = sqlite3.connect(sqlite_file)
     c = conn.cursor()
     return conn, c
 
-
-def getq1q3(acceptable_id):
+def getq1q4(acceptable_id):
     n_userids = list(map(lambda x: x.strip(), acceptable_id.split(',')))    
-
     user_filter = "(r.interview_uuid = "
     for u in range(len(n_userids)):
         if u < len(n_userids)-1:
             user_filter += '"' + n_userids[u] + '" OR r.interview_uuid = '
         else:
             user_filter += '"' + n_userids[u] + '")'
-
     # now we connect database to extract some data into excel file.
     sqlite_file = 'db.sqlite3'
-    conn, cur = connect(sqlite_file)
-    
+    conn, cur = connect(sqlite_file)    
     #####################################################
     ### Now, let's see what I can do with the data.
     query = query = "SELECT DISTINCT r.interview_uuid, q.text, a.body, a.caption_var " +\
@@ -30,16 +25,10 @@ def getq1q3(acceptable_id):
     "ON (r.id = b.response_id AND a.answerbase_ptr_id = b.id AND b.question_id = q.id)" +\
     " WHERE " + user_filter + " AND " +\
     "(q.text = 'Did you see any errors in the caption?' OR q.text = 'I am confident that my decision was correct:' OR " +\
-    "q.text = 'How would you rate the quality of the caption?')"
-    
+    "q.text = 'How would you rate the quality of the caption?' OR q.text = 'How would you rate your viewing pleasure from the video?')"    
     cur.execute(query)
     table = cur.fetchall()
-
-
     return table
-
-
-
 
 def process_db(acceptable_id):
     n_userids = list(map(lambda x: x.strip(), acceptable_id.split(',')))    
@@ -70,10 +59,7 @@ def process_db(acceptable_id):
     ansset_1 = ['1. Yes', '2. No']
     ansset_2 = ['1. Strongly disagree', '2. Disagree', '3. Neither agree nor disagree', '4. Agree', '5. Strongly agree']
     ansset_3 = ['1. Strongly dissatisfied', '2. Dissatisfied', '3. Neither satisfied nor dissatisfied', '4. Satisfied', '5. Strongly satisfied']
-
-    conditions = ['2. I identify as Deaf', '3. I am Deafened','4. I am Hard of Hearing']
-    
-
+    ansset_4 = ['1. Very poor', '2. Poor', '3. Neither good nor poor', '4. Good', '5. Excellent']
     narrator_vid = ["v1", "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23"]
     no_narrator_vid = ["v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9"]
 
@@ -147,31 +133,20 @@ def process_db(acceptable_id):
             caption_set[caption_var]['viewing pleasure']['4. Good'] = 0
             caption_set[caption_var]['viewing pleasure']['5. Excellent'] = 0
 
-
-
         # add count.
         if caption != "demo" and caption != None:
-            #if caption[0] in no_narrator_vid:
-            #if caption[0] in narrator_vid:
-        
             if answer in ansset_2: # confidence level is related to yes or no
                 caption_set[caption_var][question][prev_answer][answer] += 1     
             else: # others, just count.
                 caption_set[caption_var][question][answer] += 1       
     
-    # for v in caption_set:
-    #     print(v, caption_set[v]['caption quality'])
-        
     sum_list = []
     for i, v in sorted(caption_set.items(), key=lambda x: int(x[0])):
-        # print("Variation #" + i)        
-        # print('Yes', caption_set[i]['error detection']['Yes'])
         conf_label, conf_lvl, yn_label = [], [], []
         for l in caption_set[i]['confidence level']['Yes']:
             yn_label.append('Yes error detected in the CC.')
             conf_label.append(l)
             conf_lvl.append(caption_set[i]['confidence level']['Yes'][l])
-        # print('No', caption_set[i]['error detection']['No'])        
         conf_label_no, conf_lvl_no, yn_label_no = [], [], []
         for l in caption_set[i]['confidence level']['No']:
             yn_label_no.append('No error in the CC.')
@@ -190,17 +165,10 @@ def process_db(acceptable_id):
             sum_list.append(yn_label)
             sum_list.append(conf_label)            
         sum_list.append(conf_lvl)
-        
-        # print(conf_label)
-        # print(conf_lvl)
-        # print('---------------------------------------------------')
-    
     return sum_list
-        
-
+    
 
 if __name__ == "__main__":
-    
     # filter out acceptable data only. to get rid of bad data.
     hoh = "981c026156904ab09124ecf24f22f308, ef7d53853ffa4de1a0ce9d5ccc62d90e, 8842de8026bb41dfbbda4c4449533432,\
         4f365caeba754ce2b64c05fe8bbf1b83, a0daa2a0a5334b1eb0167d437ee17cab, 2624763b44f74dee9296c724a89da38e,\
@@ -230,30 +198,29 @@ if __name__ == "__main__":
         "hoh_deafened": deafened + ", " + hoh
     }
 
-
-
-    workbook = Workbook('output.xlsx')
-    for i in hearing_groups:
-        worksheet = workbook.add_worksheet(i)
-        all_list = process_db(hearing_groups[i])
-
-    #     for r in range(len(all_list)): # for each row
-    #         row = all_list[r]
-    #         for c in range(len(row)): # for each column
-    #             worksheet.write(r,c,row[c]) # row, col, message
-
-    # workbook.close()
-
-    # workbook = Workbook('q1q3_results.xlsx')
+    ######################################## output stub
+    # workbook = Workbook('output.xlsx')
     # for i in hearing_groups:
     #     worksheet = workbook.add_worksheet(i)
-    #     all_list = getq1q3(hearing_groups[i])
-
+    #     all_list = process_db(hearing_groups[i])
     #     for r in range(len(all_list)): # for each row
     #         row = all_list[r]
     #         for c in range(len(row)): # for each column
     #             worksheet.write(r,c,row[c]) # row, col, message
-    
     # workbook.close()
-    # print("done exporting.")
+
+    ######################################### q1-q4
+    workbook = Workbook('q1q4_results.xlsx')
+    for i in hearing_groups:
+        worksheet = workbook.add_worksheet(i)
+        all_list = getq1q4(hearing_groups[i])
+        for r in range(len(all_list)): # for each row
+            row = all_list[r]
+            for c in range(len(row)): # for each column
+                worksheet.write(r,c,row[c]) # row, col, message    
+    workbook.close()
+
+
+
+    print("done exporting.")
 

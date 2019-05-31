@@ -14,53 +14,20 @@ def export_excel(worksheet, all_list):
         for c in range(len(row)): # for each column
             worksheet.write(r,c,row[c]) # row, col, message
     
+def to_score(answer):    
+    ansset_1 = ['1. Yes', '2. No']
+    ansset_2 = ['1. Strongly disagree', '2. Disagree', '3. Neither agree nor disagree', '4. Agree', '5. Strongly agree']
+    ansset_3 = ['1. Strongly dissatisfied', '2. Dissatisfied', '3. Neither satisfied nor dissatisfied', '4. Satisfied', '5. Strongly satisfied']
+    ansset_4 = ['1. Very poor', '2. Poor', '3. Neither good nor poor', '4. Good', '5. Excellent']
+    ans_cor = [ansset_1, ansset_2, ansset_3, ansset_4]
 
+    for ansset in ans_cor:
+        if ans in ansset:
+            if ans == "2. No":
+                return -1
+            else:
+                return int(ans[0])
 
-def to_score(answer):
-    
-    # calculate the cognitive score
-    # if a person detects an error, it will be 'yes' otherwise 'no'
-    # 'yes' = 1, and 'no' = 2
-    # then, the five confidence level can be considered as weights
-    #
-    # Q2: I am confident that my decision is correct:
-    # '1. Strongly disagree': 20%
-    # '2. Disagree': 40%
-    # '3. Neither agree nor disagree': 60%
-    # '4. Agree': 80$
-    # '5. Strongly agree': 100%
-    # weights are multiplied to the score.
-    # 
-
-
-    if answer == "1. Strongly dissatisfied":
-        return 1
-    elif answer == "2. Dissatisfied":
-        return 2
-    elif answer == "3. Neither satisfied nor dissatisfied":
-        return 3
-    elif answer == "4. Satisfied":
-        return 4
-    elif answer == "5. Strongly satisfied":
-        return 5
-    
-    if answer == "1. Strongly disagree":
-        return 1
-    elif answer == "2. Disagree":
-        return 2
-    elif answer == "3. Neither agree nor disagree":
-        return 3
-    elif answer == "4. Agree":
-        return 4
-    elif answer == "5. Strongly agree":
-        return 5
-
-    if answer == "1. Yes":
-        return 1
-    elif answer == "2. No":
-        return 2
-
-    
 def get_weight_score(x):
     if x[1] != None:
         return float(x[0]) * float(x[1])
@@ -79,42 +46,16 @@ def get_mannwhitneyu_map(question, v1, v2):
     l2 = list(map(lambda x: to_score(x[1]), question[str(v2)].values()))
     return (v2, mannwhitneyu(l1, l2))
 
-
 workbook = Workbook('q1q3_handled.xlsx') # output
-
-
 filename = "q1q3_results.xlsx"
 xl = pandas.ExcelFile(filename)
-
 """
 Is narrator in the video clip?
-
-v2_sports: no
-v3_sports: no
-v4_hockey: no
-v5_hockey: no
-v6_hockey: no
-v7_weather: yes, but cannot see face
-v8_weather: yes, but cannot see lips clearly
-v9_weather: yes, but cannot see face
-
-
-v1_sports: yes
-v10_social: yes
-v11_social: yes
-v12_social: yes
-v13_weather: yes
-v14_weather: yes
-v15_weather: yes
-v16_weather: yes
-v17_weather: yes
-v18_weather: yes
-v19_weather: yes
-v20_weather: yes
-v21_weather: yes
-v22_weather: yes
-v23_social: yes
-
+[v2_sports: no, v3_sports: no, v4_hockey: no, v5_hockey: no, v6_hockey: no, 
+v7_weather: yes, but cannot see face, v8_weather: yes, but cannot see lips clearly, v9_weather: yes, but cannot see face]
+[v1_sports: yes, v10_social: yes, v11_social: yes, v12_social: yes, v13_weather: yes, v14_weather: yes, v15_weather: yes,
+v16_weather: yes, v17_weather: yes, v18_weather: yes, v19_weather: yes, v20_weather: yes, v21_weather: yes, v22_weather: yes
+v23_social: yes]
 """
 
 
@@ -130,19 +71,22 @@ for sn in xl.sheet_names:
     variations = {
         "Did you see any errors in the caption?": {},
         "I am confident that my decision was correct:": {},
-        "How would you rate the quality of the caption?": {}
+        "How would you rate the quality of the caption?": {},
+        "How would you rate your viewing pleasure from the video?": {}
     }
 
     nar = {
         "Did you see any errors in the caption?": {},
         "I am confident that my decision was correct:": {},
-        "How would you rate the quality of the caption?": {}
+        "How would you rate the quality of the caption?": {},
+        "How would you rate your viewing pleasure from the video?": {}
     }
 
     no_nar = {
         "Did you see any errors in the caption?": {},
         "I am confident that my decision was correct:": {},
-        "How would you rate the quality of the caption?": {}
+        "How would you rate the quality of the caption?": {},
+        "How would you rate your viewing pleasure from the video?": {}
     }
 
     for i, r in df.iterrows():
@@ -195,14 +139,40 @@ for sn in xl.sheet_names:
         
         ttest_result = list(map(lambda x: get_t_map(qmap, 1, x), range(2,24))) # ttest( v1 , (v2-v23) )
         for s in ttest_result:
+            print(s)
+
             p = s[1][1]
             # interpret
             alpha = 0.05
             # interpret via p-value
-            if p < alpha:
-                print(s, 'Reject the null hypothesis that the means are equal.')        
+            # if p < alpha:
+            #     print(s, 'Reject the null hypothesis that the means are equal.')        
             # else:
             #     print(s, 'Accept null hypothesis that the means are equal.')
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # now we have a sorted table.
     all_list_video, all_list, nar_list, no_nar_list, uids = [], [], [], [], []
@@ -259,30 +229,30 @@ for sn in xl.sheet_names:
         no_nar_list.append(q_nonar)
 
 
-    worksheet = workbook.add_worksheet('q1_' + sn)
-    export_excel(worksheet, all_list[0])
-    worksheet = workbook.add_worksheet('q2_' + sn)
-    export_excel(worksheet, all_list[1])
-    worksheet = workbook.add_worksheet('q3_' + sn)
-    export_excel(worksheet, all_list[2])
-    worksheet = workbook.add_worksheet('v_' + sn)
-    export_excel(worksheet, all_list_video[2])
+    # worksheet = workbook.add_worksheet('q1_' + sn)
+    # export_excel(worksheet, all_list[0])
+    # worksheet = workbook.add_worksheet('q2_' + sn)
+    # export_excel(worksheet, all_list[1])
+    # worksheet = workbook.add_worksheet('q3_' + sn)
+    # export_excel(worksheet, all_list[2])
+    # worksheet = workbook.add_worksheet('v_' + sn)
+    # export_excel(worksheet, all_list_video[2])
 
 
-    worksheet = workbook.add_worksheet('nar_q1' + sn)
-    export_excel(worksheet, nar_list[0])
-    worksheet = workbook.add_worksheet('nar_q2' + sn)
-    export_excel(worksheet, nar_list[1])
-    worksheet = workbook.add_worksheet('nar_q3' + sn)
-    export_excel(worksheet, nar_list[2])
+    # worksheet = workbook.add_worksheet('nar_q1' + sn)
+    # export_excel(worksheet, nar_list[0])
+    # worksheet = workbook.add_worksheet('nar_q2' + sn)
+    # export_excel(worksheet, nar_list[1])
+    # worksheet = workbook.add_worksheet('nar_q3' + sn)
+    # export_excel(worksheet, nar_list[2])
 
 
-    worksheet = workbook.add_worksheet('nonar_q1' + sn)
-    export_excel(worksheet, no_nar_list[0])
-    worksheet = workbook.add_worksheet('nonar_q2' + sn)
-    export_excel(worksheet, no_nar_list[1])
-    worksheet = workbook.add_worksheet('nonar_q3' + sn)
-    export_excel(worksheet, no_nar_list[2])
+    # worksheet = workbook.add_worksheet('nonar_q1' + sn)
+    # export_excel(worksheet, no_nar_list[0])
+    # worksheet = workbook.add_worksheet('nonar_q2' + sn)
+    # export_excel(worksheet, no_nar_list[1])
+    # worksheet = workbook.add_worksheet('nonar_q3' + sn)
+    # export_excel(worksheet, no_nar_list[2])
 
 
 # #     # now that we have the raw values, let's calculate the weighted scores.

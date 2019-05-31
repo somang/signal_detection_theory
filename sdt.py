@@ -164,13 +164,15 @@ if __name__ == "__main__":
     # convert x (ms, wpm, mw) to a z-score for the given 'signal' type.
     # then get the c value probabilities p(H) and p(FA)
 
-    # v15_overall
-    dprime = 0.330
-    c = 0.111
-    # v2_overall
-    #dprime = -0.299
-    #c = 0.426
-    
+
+
+
+
+
+
+
+
+
     """
 
 
