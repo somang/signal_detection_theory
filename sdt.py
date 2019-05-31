@@ -151,7 +151,7 @@ if __name__ == "__main__":
                 file_name = "img/" + head + "/" + head + "_" + imgfname + '.png'
                 print(file_name)
 
-                #plt.savefig(file_name, bbox_inches='tight')
+                plt.savefig(file_name, bbox_inches='tight')
                 plt.close()
                 
 

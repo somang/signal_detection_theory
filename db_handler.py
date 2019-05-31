@@ -61,6 +61,9 @@ def process_db(acceptable_id):
     "FROM ccvsite_response AS r, ccvsite_answerbase AS b, ccvsite_answerradio AS a, ccvsite_question AS q " +\
     "ON (r.id = b.response_id AND a.answerbase_ptr_id = b.id AND b.question_id = q.id)" +\
     " WHERE " + user_filter + ""    
+
+    print(query)
+
     cur.execute(query)
     table = cur.fetchall()
 
@@ -234,23 +237,23 @@ if __name__ == "__main__":
         worksheet = workbook.add_worksheet(i)
         all_list = process_db(hearing_groups[i])
 
-        for r in range(len(all_list)): # for each row
-            row = all_list[r]
-            for c in range(len(row)): # for each column
-                worksheet.write(r,c,row[c]) # row, col, message
+    #     for r in range(len(all_list)): # for each row
+    #         row = all_list[r]
+    #         for c in range(len(row)): # for each column
+    #             worksheet.write(r,c,row[c]) # row, col, message
 
-    workbook.close()
+    # workbook.close()
 
-    workbook = Workbook('q1q3_results.xlsx')
-    for i in hearing_groups:
-        worksheet = workbook.add_worksheet(i)
-        all_list = getq1q3(hearing_groups[i])
+    # workbook = Workbook('q1q3_results.xlsx')
+    # for i in hearing_groups:
+    #     worksheet = workbook.add_worksheet(i)
+    #     all_list = getq1q3(hearing_groups[i])
 
-        for r in range(len(all_list)): # for each row
-            row = all_list[r]
-            for c in range(len(row)): # for each column
-                worksheet.write(r,c,row[c]) # row, col, message
+    #     for r in range(len(all_list)): # for each row
+    #         row = all_list[r]
+    #         for c in range(len(row)): # for each column
+    #             worksheet.write(r,c,row[c]) # row, col, message
     
-    workbook.close()
-    print("done exporting.")
+    # workbook.close()
+    # print("done exporting.")
 
