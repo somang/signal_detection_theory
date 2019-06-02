@@ -1,15 +1,14 @@
-import csv
-from xlsxwriter.workbook import Workbook
-import xlrd
-from xlrd import open_workbook
 import pandas
-from scipy.stats import shapiro
-from scipy.stats import mannwhitneyu
-import sdt_metrics
+import numpy
 from sdt_metrics import dprime, HI, MI, CR, FA, SDT
 
-from scipy import stats
+from xlrd import open_workbook
+from xlsxwriter.workbook import Workbook
 
+from scipy.stats import shapiro
+from scipy.stats import levene
+from scipy.stats import mannwhitneyu
+from scipy.stats import ttest_ind
 
 def export_excel(worksheet, all_list):
     for r in range(len(all_list)): # for each row
@@ -30,10 +29,22 @@ def to_score(answer):
                 return -1
             else:
                 return int(answer[0])
-
-def get_shapiro_map(question, v1):
+def get_t_map(question, v1, v2):
     l1 = list(map(lambda x: to_score(x[1]), question[str(v1)].values()))
-    return (v1, shapiro(l1))
+    l2 = list(map(lambda x: to_score(x[1]), question[str(v2)].values()))
+    return (v2, stats.ttest_ind(l1, l2))
+    
+def get_mannwhitneyu_map(question, v1, v2):
+    l1 = list(map(lambda x: to_score(x[1]), question[str(v1)].values()))
+    l2 = list(map(lambda x: to_score(x[1]), question[str(v2)].values()))
+    return (v2, mannwhitneyu(l1, l2))
+
+
+def handle_satlvl(var_sat, x):
+    return x * var_sat[x]
+
+
+
 
 
 filename = "q1q4_results.xlsx"
@@ -42,7 +53,6 @@ xl = pandas.ExcelFile(filename)
 workbook = Workbook('q1q4_handled.xlsx') # output
 groups = {}
 for sn in xl.sheet_names:
-    #print(sn)
     variations = {
         "Did you see any errors in the caption?": {},
         "I am confident that my decision was correct:": {},
@@ -62,21 +72,20 @@ for sn in xl.sheet_names:
             variations[quiz][caption_var][uuid] = (video, answer)
 
     all_list_video, all_list, uids = [], [], []
-    for uid in variations["Did you see any errors in the caption?"]['1']: # get all uids
+    for uid in variations["Did you see any errors in the caption?"]['1']:
         uids.append(uid)
        
-    for q in variations: # for each question
+    for q in variations:
         qz, qz_video = [], []
         head_row = ["uuid"]
         first = True
-        for u in uids: # for each user
+        for u in uids:
             row, vid_row = [u], [u]
             for n in range(1, 24): # from variation 1 to 23            
                 variation_n = str(n) # convert to string value
                 ans = (100, "") # initialization
                 if first:
                     head_row.append(variation_n)
-
                 if variations[q][variation_n].get(u):
                     ans = variations[q][variation_n][u]
                     row.append(to_score(ans[1]))
@@ -107,36 +116,99 @@ for sn in xl.sheet_names:
 
 workbook.close() # done writing
 
-
 dprimes = {'all':{}, 'deaf':{}, 'hoh_deafened':{}}
+ccq_satisfaction = {'all':{}, 'deaf':{}, 'hoh_deafened':{}}
+viewing_pleasure = {'all':{}, 'deaf':{}, 'hoh_deafened':{}}
+
 for g in groups:
     print(g)
-    tmp_dprime = []
-    # count yes/no for each variation
-    gq = groups[g][0] # yes/no question
-    freq = {}
+    
+    yn_freq, ccq, vp = {}, {}, {}
     for v in range(1,23):
-        freq[v] = {'y': 0, 'n': 0}    
-    for uid in gq:
+        yn_freq[v] = {'y': 0, 'n': 0}    
+        ccq[v] = {1: 0, 2: 0, 3:0, 4:0, 5:0}    
+        vp[v] = {1: 0, 2: 0, 3:0, 4:0, 5:0}
+    
+    for uid in groups[g][0]: # get question
         for v in range(1,23):
             if uid[v] == 1:
-                freq[v]['y'] += 1
+                yn_freq[v]['y'] += 1
             elif uid[v] == -1:
-                freq[v]['n'] += 1
+                yn_freq[v]['n'] += 1
+
     # get SDT values
     tmp_l = []
     for v in range(2,23): # because variation 1 is for FA
-        sdt_obj = SDT(HI=freq[v]['y'], MI=freq[v]['n'], FA=freq[1]['y'], CR=freq[1]['n'])
+        sdt_obj = SDT(HI=yn_freq[v]['y'], MI=yn_freq[v]['n'], FA=yn_freq[1]['y'], CR=yn_freq[1]['n'])
         tmp_l.append(sdt_obj.dprime())
     dprimes[g] = tmp_l
 
+    # count the frequency of responses [1-5]
+    for uid in groups[g][2]: # caption rating
+        for v in range(1,23):
+            if uid[v] == 1:
+                ccq[v][1] += 1
+            elif uid[v] == 2:
+                ccq[v][2] += 1            
+            elif uid[v] == 3:
+                ccq[v][3] += 1
+            elif uid[v] == 4:
+                ccq[v][4] += 1
+            elif uid[v] == 5:
+                ccq[v][5] += 1
+    ccq_satisfaction[g] = ccq
 
-for q in range(0,3):
+    # count the frequency of responses [1-5]
+    for uid in groups[g][3]: # visual pleasure
+        for v in range(1,23):
+            if uid[v] == 1:
+                vp[v][1] += 1
+            elif uid[v] == 2:
+                vp[v][2] += 1            
+            elif uid[v] == 3:
+                vp[v][3] += 1
+            elif uid[v] == 4:
+                vp[v][4] += 1
+            elif uid[v] == 5:
+                vp[v][5] += 1
+    viewing_pleasure[g] = vp
+
+for q in range(0,4):
     print("question", q)
     if q == 0:
-        print(mannwhitneyu(dprimes['deaf'], dprimes['hoh_deafened']))
-        print(stats.ttest_ind(dprimes['deaf'], dprimes['hoh_deafened']))
-    else:
-        print(groups['deaf'][1])
-        print(mannwhitneyu(groups['deaf'][q], groups['hoh_deafened'][q]))
-        print(stats.ttest_ind(groups['deaf'][q], groups['hoh_deafened'][q]))
+        print(numpy.mean(dprimes['deaf']), numpy.std(dprimes['deaf']))
+        print(numpy.mean(dprimes['hoh_deafened']), numpy.std(dprimes['hoh_deafened']))
+
+        d_shapiro = shapiro(dprimes['deaf'])
+        hoh_shapiro = shapiro(dprimes['hoh_deafened'])
+        print("Test for normality:", d_shapiro, hoh_shapiro)
+        if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
+            print("There's an evidence of normal distribution.")
+            dhoh_levene = levene(dprimes['deaf'], dprimes['hoh_deafened'])
+            print("Test for variance:", dhoh_levene)
+            if dhoh_levene[1] > 0.05: # equal variance if p > .05
+                print("There's evidence of equal variance") 
+                print("t-test assumptions are met")
+                df = len(dprimes['deaf']) + len(dprimes['hoh_deafened']) - 2
+                print(ttest_ind(dprimes['deaf'], dprimes['hoh_deafened']), 'df:'+str(df))
+            else:
+                print("not equal variance........")
+        else:
+            print("probable not normally distributed")
+            print(mannwhitneyu(dprimes['deaf'], dprimes['hoh_deafened']))
+    if q == 2:
+        d_ccq = ccq_satisfaction['deaf']
+        h_ccq = ccq_satisfaction['hoh_deafened']
+        for v in range(1, 23):
+            var_sat = ccq_satisfaction['all'][v]
+            tmp = []
+            for i in var_sat:
+                for j in range(var_sat[i]):
+                    tmp.append(i)
+            # tmp has all occurences of votes/ratings
+            print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp), numpy.std(tmp), numpy.median(tmp)))
+
+
+
+
+            # list(map(lambda x: handle_satlvl(var_sat, x), var_sat))            
