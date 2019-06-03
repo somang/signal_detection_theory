@@ -31,16 +31,16 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
 
     noise_pdf = norm.pdf(x)
     error_pdf = norm.pdf(x, sdt_obj.dprime(), 1)              # get the norm.pdf for x interval
-    ax.plot(x, noise_pdf, "g", alpha=0.9, label="noise")
-    ax.plot(x, error_pdf, "r", alpha=0.9, label="error")
+    ax.plot(x, noise_pdf, "g", alpha=0.9, label="ideal (noise)", linewidth=2, linestyle = '-.')
+    ax.plot(x, error_pdf, "r", alpha=0.9, label="error", linewidth=2)
 
-    plt.axvline(x=sdt_obj.c(), linestyle='-.') #, label="c= "+str(c))
-    plt.text(sdt_obj.c() + 0.01, 0.01, "c= " + '{:{width}.{prec}f}'.format(sdt_obj.c(), width=5, prec=3))
+    plt.axvline(x=sdt_obj.c(), linestyle='--', linewidth=2) #, label="c= "+str(c))
+    plt.text(sdt_obj.c() + 0.01, 0.01, "c = " + '{:{width}.{prec}f}'.format(sdt_obj.c(), width=5, prec=3), fontsize=12)
 
-    plt.vlines(0, 0, 0.4, linestyle='--', color="m")
-    plt.vlines(sdt_obj.dprime(), 0, 0.4, linestyle='--', color="m")
+    #plt.vlines(0, 0, 0.4, linestyle='-.', color="m", linewidth=2)
+    #plt.vlines(sdt_obj.dprime(), 0, 0.4, linestyle='-.', color="m", linewidth=2)
     plt.hlines(0.4, 0, sdt_obj.dprime())
-    plt.text(sdt_obj.dprime(), 0.405, "d'= " + '{:{width}.{prec}f}'.format(sdt_obj.dprime(), width=5, prec=3))
+    plt.text(sdt_obj.dprime(), 0.405, "d' = " + '{:{width}.{prec}f}'.format(sdt_obj.dprime(), width=5, prec=3), fontsize=12)
 
     # calculate c for each confidence level
     ztpr_r = list(map(lambda x: norm.ppf(x), get_cumul_z(tpr)))
@@ -53,7 +53,7 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
 
     for i in c_r:
         if not math.isnan(i) and not math.isinf(i):
-            plt.vlines(i, 0, 0.4, linestyle=':')
+            plt.vlines(i, 0, 0.4, linestyle=':', linewidth=1)
 
     # if dprime > 0:
     #     ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='green', alpha=0.15, label="hit") # , interpolate=True)
@@ -71,7 +71,8 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
     ax.set_title("Probability Distribution", fontsize=14)
     ax.set_ylabel('Probability Density', fontsize=12)
     ax.set_xlabel('Z-score', fontsize=12)
-    ax.legend()
+    ax.tick_params(labelsize=14)
+    ax.legend(prop={'size': 10})
     return ax
 
 def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
@@ -80,12 +81,13 @@ def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, tru
         coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
         ffit = poly.polyval(x, coefs)
         ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
-    ax.plot(fpr, tpr, label='ROC', marker='.') #, linestyle="None")    
-    ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0") # guide line
-    ax.set_xlabel('False-Alarm Rate')
-    ax.set_ylabel('Hit Rate')
+    ax.plot(fpr, tpr, label='ROC', marker='.', linewidth=2,  markersize=10) #, linestyle="None")    
+    ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0", linewidth=2,  markersize=10) # guide line
+    ax.set_xlabel('False-Alarm Rate', fontsize=12)
+    ax.set_ylabel('Hit Rate', fontsize=12)
     ax.set_title(var + "-" + 'ROC Curve')
-    ax.legend(loc='best')
+    ax.legend(loc='best', prop={'size': 12})
+    ax.tick_params(labelsize=14)
     return ax
 
 def get_cumul_z(rate):
@@ -128,6 +130,8 @@ if __name__ == "__main__":
                 
                 # set grid and color 
                 fig = plt.figure() #tight_layout=True)
+                #fig = plt.figure(figsize=(4,3))
+
                 gs = gridspec.GridSpec(3, 9)
                 n = 100
                 # get colormap
@@ -136,22 +140,27 @@ if __name__ == "__main__":
                 #c = cycler('color', cmap(np.linspace(0,1,5)) )
                 # supply cycler to the rcParam
                 #plt.rcParams["axes.prop_cycle"] = c
-                                
+                
+
                 # # draw roc curve
-                ax = fig.add_subplot(gs[1, :3])
-                plot_roc_curve(fpr_cum, tpr_cum, fname, ax, True)
+                #ax = fig.add_subplot(gs[1, :3])
+                #ax = fig.add_subplot(gs[0:, 0:])
+                #plot_roc_curve(fpr_cum, tpr_cum, fname, ax, True)
                 
                 # draw sdt distribution
-                ax = fig.add_subplot(gs[0:, 3:])
+                #ax = fig.add_subplot(gs[0:, 3:])
+                ax = fig.add_subplot(gs[0:, 0:])
                 draw_sdt(tpr, fpr, sdt_obj, ax)
                 
-                #plt.show()
+                if fname.split('_')[0] == 'input/h' and fname.split('_')[1] == 'V8':
+                    plt.show()
                 head = input_file.split("/")[1].split("_")[0]             
                 imgfname = re.sub(r":| ", "_", hit_list[0])
                 file_name = "img/" + head + "/" + head + "_" + imgfname + '.png'
                 print(file_name)
 
-                plt.savefig(file_name, bbox_inches='tight')
+                #plt.figure(figsize=(19.2,10.8), dpi=100)
+                plt.savefig(file_name)
                 plt.close()
                 
 
