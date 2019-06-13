@@ -176,127 +176,142 @@ for g in groups:
 for q in range(0,4):
     print("question", q)
     if q == 0:
-        print(numpy.mean(dprimes['deaf']), numpy.std(dprimes['deaf']))
-        print(numpy.mean(dprimes['hoh_deafened']), numpy.std(dprimes['hoh_deafened']))
+        # print("deaf group mean, SD:", numpy.mean(dprimes['deaf']), numpy.std(dprimes['deaf']))
+        # print("hoh group mean, SD:", numpy.mean(dprimes['hoh_deafened']), numpy.std(dprimes['hoh_deafened']))
 
-        d_shapiro = shapiro(dprimes['deaf'])
-        hoh_shapiro = shapiro(dprimes['hoh_deafened'])
-        print("Test for normality:", d_shapiro, hoh_shapiro)
-        if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
-            print("h(0): data from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
-            dhoh_levene = levene(dprimes['deaf'], dprimes['hoh_deafened'])
-            dhoh_levene = levene(dprimes['hoh_deafened'], dprimes['deaf'])
-            print("Test for variance:", dhoh_levene)
-            if dhoh_levene[1] > 0.05: # equal variance if p > .05
-                print("h(0): data from equal variances -> cannot be rejected. There's evidence of equal variance") 
-                print("t-test assumptions are met")
-                df = len(dprimes['deaf']) + len(dprimes['hoh_deafened']) - 2
-                print(ttest_ind(dprimes['deaf'], dprimes['hoh_deafened']), 'df:'+str(df))
-                print(ttest_ind(dprimes['hoh_deafened'], dprimes['deaf']), 'df:'+str(df))
-            else:
-                print("not equal variance........")
-        else:
-            print("probable not normally distributed")
-            print(mannwhitneyu(dprimes['deaf'], dprimes['hoh_deafened']))
-    if q == 2:
-        d_qr = []
-        h_qr = []
-        for v in range(1, 23):
-            # var_sat = ccq_satisfaction['all'][v]
-            # tmp = []
-            # for i in var_sat:
-            #     for j in range(var_sat[i]):
-            #         tmp.append(i)
-            # print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp), numpy.std(tmp), numpy.median(tmp)))
+        # d_shapiro = shapiro(dprimes['deaf'])
+        # hoh_shapiro = shapiro(dprimes['hoh_deafened'])
+        # print("Test for normality (deaf group, hoh group):", d_shapiro, hoh_shapiro)
+        # if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
+        #     print("h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
+        #     #dhoh_levene = levene(dprimes['deaf'], dprimes['hoh_deafened'])
+        #     dhoh_levene = levene(dprimes['hoh_deafened'], dprimes['deaf'])
+        #     print("Test for variance:", dhoh_levene)
+        #     if dhoh_levene[1] > 0.05: # equal variance if p > .05
+        #         print("h(0): data are from equal variances -> cannot be rejected. There's evidence of equal variance") 
+        #         print("t-test assumptions are met")
+        #         df = len(dprimes['deaf']) + len(dprimes['hoh_deafened']) - 2
+        #         #print(ttest_ind(dprimes['deaf'], dprimes['hoh_deafened']), 'df:'+str(df))
+        #         print(ttest_ind(dprimes['hoh_deafened'], dprimes['deaf']), 'df:'+str(df))
+        #     else:
+        #         print("not equal variance........")
+        # else:
+        #     print("probable not normally distributed")
+        #     print(mannwhitneyu(dprimes['deaf'], dprimes['hoh_deafened']))
 
-            d_ccq = ccq_satisfaction['deaf'][v]
-            tmp_d = []
-            for i in d_ccq:
-                for j in range(d_ccq[i]):
-                    tmp_d.append(i)
-            #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_d), numpy.std(tmp_d), numpy.median(tmp_d)))
 
-            h_ccq = ccq_satisfaction['hoh_deafened'][v]
-            tmp_h = []
-            for i in h_ccq:
-                for j in range(h_ccq[i]):
-                    tmp_h.append(i)
-            #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_h), numpy.std(tmp_h), numpy.median(tmp_h)))
 
-            d_qr.append(numpy.mean(tmp_d))
-            h_qr.append(numpy.mean(tmp_h))
+        ### Find the difference between main effect vs interaction effect.        
+        # for v in range(21):
+        #     print(v, dprimes['deaf'][v], dprimes['hoh_deafened'][v])
+        # d_main, d_int = dprimes['deaf'][:8], dprimes['deaf'][8:]
+        # h_main, h_int = dprimes['hoh_deafened'][:8], dprimes['hoh_deafened'][8:]
+        # print(ttest_ind(d_main, d_int))
+        # print(ttest_ind(h_main, h_int))
+        ######## No significant difference between main vs interaction variations (even with mann-whitney)
+
+
+
+
+    # if q == 2:
+    #     d_qr = []
+    #     h_qr = []
+    #     for v in range(1, 23):
+    #         # var_sat = ccq_satisfaction['all'][v]
+    #         # tmp = []
+    #         # for i in var_sat:
+    #         #     for j in range(var_sat[i]):
+    #         #         tmp.append(i)
+    #         # print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp), numpy.std(tmp), numpy.median(tmp)))
+
+    #         d_ccq = ccq_satisfaction['deaf'][v]
+    #         tmp_d = []
+    #         for i in d_ccq:
+    #             for j in range(d_ccq[i]):
+    #                 tmp_d.append(i)
+    #         #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_d), numpy.std(tmp_d), numpy.median(tmp_d)))
+
+    #         h_ccq = ccq_satisfaction['hoh_deafened'][v]
+    #         tmp_h = []
+    #         for i in h_ccq:
+    #             for j in range(h_ccq[i]):
+    #                 tmp_h.append(i)
+    #         #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_h), numpy.std(tmp_h), numpy.median(tmp_h)))
+
+    #         d_qr.append(numpy.mean(tmp_d))
+    #         h_qr.append(numpy.mean(tmp_h))
         
-        # see if there's difference in ranked between deaf and hoh viewers mean quality rating
-        print(numpy.mean(d_qr), numpy.std(d_qr))
-        print(numpy.mean(h_qr), numpy.std(h_qr))
+    #     # see if there's difference in ranked between deaf and hoh viewers mean quality rating
+    #     print("deaf group mean, SD:", numpy.mean(d_qr), numpy.std(d_qr))
+    #     print("hoh group mean, SD:", numpy.mean(h_qr), numpy.std(h_qr))
 
-        d_shapiro = shapiro(d_qr)
-        hoh_shapiro = shapiro(h_qr)
-        print("Test for normality:", d_shapiro, hoh_shapiro)
+    #     d_shapiro = shapiro(d_qr)
+    #     hoh_shapiro = shapiro(h_qr)
+    #     print("Test for normality (deaf group, hoh group):", d_shapiro, hoh_shapiro)
 
-        if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
-            print("h(0): data from normal distribution cannot be rejected. There's an evidence of normal distribution.")
-            dhoh_levene = levene(d_qr, h_qr)
-            print("Test for variance:", dhoh_levene)
-            if dhoh_levene[1] > 0.05: # equal variance if p > .05
-                print("h(0): data from equal variances -> cannot be rejected. There's evidence of equal variance") 
-                print("t-test assumptions are met")
-                df = len(d_qr) + len(h_qr) - 2
-                print(ttest_ind(d_qr, h_qr), 'df:'+str(df))
-                print(ttest_ind(h_qr, d_qr), 'df:'+str(df))
-            else:
-                print("not equal variance........")
-        else:
-            print("probable not normally distributed")
-            print(mannwhitneyu(d_qr, h_qr))
-    if q == 3:
-        d_qr = []
-        h_qr = []
-        for v in range(1, 23):
-            # var_sat = viewing_pleasure['all'][v]
-            # tmp = []
-            # for i in var_sat:
-            #     for j in range(var_sat[i]):
-            #         tmp.append(i)
-            # print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp), numpy.std(tmp), numpy.median(tmp)))
+    #     if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
+    #         print("h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
+    #         dhoh_levene = levene(d_qr, h_qr)
+    #         print("Test for variance:", dhoh_levene)
+    #         if dhoh_levene[1] > 0.05: # equal variance if p > .05
+    #             print("h(0): data from equal variances -> cannot be rejected. There's evidence of equal variance") 
+    #             print("t-test assumptions are met")
+    #             df = len(d_qr) + len(h_qr) - 2
+    #             #print(ttest_ind(d_qr, h_qr), 'df:'+str(df))
+    #             print(ttest_ind(h_qr, d_qr), 'df:'+str(df))
+    #         else:
+    #             print("not equal variance........")
+    #     else:
+    #         print("probable not normally distributed")
+    #         print(mannwhitneyu(d_qr, h_qr))
+    # if q == 3:
+    #     d_qr = []
+    #     h_qr = []
+    #     for v in range(1, 23):
+    #         # var_sat = viewing_pleasure['all'][v]
+    #         # tmp = []
+    #         # for i in var_sat:
+    #         #     for j in range(var_sat[i]):
+    #         #         tmp.append(i)
+    #         # print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp), numpy.std(tmp), numpy.median(tmp)))
 
-            d_ccq = viewing_pleasure['deaf'][v]
-            tmp_d = []
-            for i in d_ccq:
-                for j in range(d_ccq[i]):
-                    tmp_d.append(i)
-            #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_d), numpy.std(tmp_d), numpy.median(tmp_d)))
+    #         d_ccq = viewing_pleasure['deaf'][v]
+    #         tmp_d = []
+    #         for i in d_ccq:
+    #             for j in range(d_ccq[i]):
+    #                 tmp_d.append(i)
+    #         #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_d), numpy.std(tmp_d), numpy.median(tmp_d)))
 
-            h_ccq = viewing_pleasure['hoh_deafened'][v]
-            tmp_h = []
-            for i in h_ccq:
-                for j in range(h_ccq[i]):
-                    tmp_h.append(i)
-            #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_h), numpy.std(tmp_h), numpy.median(tmp_h)))
+    #         h_ccq = viewing_pleasure['hoh_deafened'][v]
+    #         tmp_h = []
+    #         for i in h_ccq:
+    #             for j in range(h_ccq[i]):
+    #                 tmp_h.append(i)
+    #         #print("variation #{0:d}: mean={1:.3f}, sd={2:.3f}, median={3:.3f}".format(v, numpy.mean(tmp_h), numpy.std(tmp_h), numpy.median(tmp_h)))
 
-            d_qr.append(numpy.mean(tmp_d))
-            h_qr.append(numpy.mean(tmp_h))
+    #         d_qr.append(numpy.mean(tmp_d))
+    #         h_qr.append(numpy.mean(tmp_h))
         
-        # see if there's difference in ranked between deaf and hoh viewers mean quality rating
-        print(numpy.mean(d_qr), numpy.std(d_qr))
-        print(numpy.mean(h_qr), numpy.std(h_qr))
+    #     # see if there's difference in ranked between deaf and hoh viewers mean quality rating
+    #     print("deaf group mean, SD:", numpy.mean(d_qr), numpy.std(d_qr))
+    #     print("hoh group mean, SD:", numpy.mean(h_qr), numpy.std(h_qr))
 
-        d_shapiro = shapiro(d_qr)
-        hoh_shapiro = shapiro(h_qr)
-        print("Test for normality:", d_shapiro, hoh_shapiro)
+    #     d_shapiro = shapiro(d_qr)
+    #     hoh_shapiro = shapiro(h_qr)
+    #     print("Test for normality (deaf group, hoh group):", d_shapiro, hoh_shapiro)
 
-        if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
-            print("h(0): data from normal distribution cannot be rejected. There's an evidence of normal distribution.")
-            dhoh_levene = levene(d_qr, h_qr)
-            print("Test for variance:", dhoh_levene)
-            if dhoh_levene[1] > 0.05: # equal variance if p > .05
-                print("h(0): data from equal variances -> cannot be rejected. There's evidence of equal variance") 
-                print("t-test assumptions are met")
-                df = len(d_qr) + len(h_qr) - 2
-                print(ttest_ind(d_qr, h_qr), 'df:'+str(df))
-                print(ttest_ind(h_qr, d_qr), 'df:'+str(df))
-            else:
-                print("not equal variance........")
-        else:
-            print("probable not normally distributed")
-            print(mannwhitneyu(d_qr, h_qr))
+    #     if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
+    #         print("h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
+    #         dhoh_levene = levene(d_qr, h_qr)
+    #         print("Test for variance:", dhoh_levene)
+    #         if dhoh_levene[1] > 0.05: # equal variance if p > .05
+    #             print("h(0): data from equal variances -> cannot be rejected. There's evidence of equal variance") 
+    #             print("t-test assumptions are met")
+    #             df = len(d_qr) + len(h_qr) - 2
+    #             #print(ttest_ind(d_qr, h_qr), 'df:'+str(df))
+    #             print(ttest_ind(h_qr, d_qr), 'df:'+str(df))
+    #         else:
+    #             print("not equal variance........")
+    #     else:
+    #         print("probable not normally distributed")
+    #         print(mannwhitneyu(d_qr, h_qr))
