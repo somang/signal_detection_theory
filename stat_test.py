@@ -173,9 +173,30 @@ for g in groups:
                 vp[v][5] += 1
     viewing_pleasure[g] = vp
 
-for q in range(0,4):
-    print("question", q)
-    if q == 0:
+
+for v in range(1,23):
+    g = "deaf"
+    #if v == 17:
+    cs = ccq_satisfaction[g][v]
+    #print(cs)
+    # get mean rating
+    sum_v = 0
+    p_n = 0
+    for i in cs:
+        p_n += cs[i]
+        sum_v += i*cs[i]
+        #print(i*cs[i], p_n)
+
+    print("{:.3f}".format(sum_v/p_n))
+
+
+
+# for q in range(0,4):
+#     print("question", q)
+
+
+
+    # if q == 0:
         # print("deaf group mean, SD:", numpy.mean(dprimes['deaf']), numpy.std(dprimes['deaf']))
         # print("hoh group mean, SD:", numpy.mean(dprimes['hoh_deafened']), numpy.std(dprimes['hoh_deafened']))
 
