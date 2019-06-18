@@ -174,20 +174,46 @@ for g in groups:
     viewing_pleasure[g] = vp
 
 
-for v in range(1,23):
-    g = "deaf"
-    #if v == 17:
-    cs = ccq_satisfaction[g][v]
-    #print(cs)
-    # get mean rating
-    sum_v = 0
-    p_n = 0
-    for i in cs:
-        p_n += cs[i]
-        sum_v += i*cs[i]
-        #print(i*cs[i], p_n)
 
-    print("{:.3f}".format(sum_v/p_n))
+g = "hoh_deafened"
+cs = groups[g][2]
+yn = groups[g][0]
+yn_cr = groups[g][1]
+
+rating = {'y':{}, 'n':{}}
+for i in range(1, 23):
+    rating['y'][i] = []
+    rating['n'][i] = []
+
+
+for user in range(1, len(groups[g][0])):
+    uid = yn[user][0]
+    for v in range(1,23):
+        #print(uid + ":", yn[user][v] * yn_cr[user][v], cs[user][v])
+        if yn[user][v] == 1:
+            rating['y'][v].append(cs[user][v])
+        elif yn[user][v] == -1:
+            rating['n'][v].append(cs[user][v])
+
+for v in range(1, 23):
+    #if v in [1, 6, 9, 14, 15, 20]:
+    if v in [1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21]:
+        print("variation {}: ({:.3f}, {:.3f})".format(v, numpy.mean(rating['y'][v]), numpy.mean(rating['n'][v])))
+        
+        
+
+
+
+
+    # get mean rating
+    # sum_v = 0
+    # p_n = 0
+    # for i in cs:
+    #     p_n += cs[i]
+    #     sum_v += i*cs[i]
+    #     #print(i*cs[i], p_n)
+
+    # print("{:.3f}".format(sum_v/p_n))
 
 
 
