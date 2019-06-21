@@ -11,6 +11,8 @@ from scipy import stats
 from scipy.stats import shapiro
 from scipy.stats import mannwhitneyu
 from scipy.stats.stats import pearsonr   
+from scipy.stats.stats import kendalltau
+from scipy.stats.stats import spearmanr
 
 import math
 
@@ -35,10 +37,20 @@ def handle_list(df, di):
     return di
 
 def print_pearson(yns, confs, ratings):
-    for v in range(1,24):
+    for v in range(1,23):
         # p = yns multiply by conf then check pearson's r
         p = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))
         print(v, pearsonr(p, ratings[v])) # x, y
+
+def print_kendall(yns, confs, ratings): # non parametric kendall's tau b
+    for v in range(1,23):
+        p = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))
+        print(v, kendalltau(p, ratings[v])) # x, y
+
+def print_spearman(yns, confs, ratings): # non parametric
+    for v in range(1,23):
+        p = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))
+        print(v, spearmanr(p, ratings[v])) # x, y
 
 
 
@@ -96,18 +108,30 @@ for sn in xl.sheet_names:
         hoh_vpr = handle_list(df, hoh_vpr)
 
 print("y/n * confidence  VS caption quality ratings")
-print_pearson(yns, confs, ratings)
-print()
-print_pearson(d_yns, d_confs, d_ratings)
-print()
-print_pearson(hoh_yns, hoh_confs, hoh_ratings)
+#print_pearson(yns, confs, ratings)
+print_kendall(yns, confs, ratings)
+print_spearman(yns, confs, ratings)
 
-print("y/n * confidence  VS visual pleasure ratings")
-print_pearson(yns, confs, vpr)
 print()
-print_pearson(d_yns, d_confs, d_vpr)
+#print_pearson(d_yns, d_confs, d_ratings)
+print_kendall(d_yns, d_confs, d_ratings)
+print_spearman(d_yns, d_confs, d_ratings)
+
 print()
-print_pearson(hoh_yns, hoh_confs, hoh_vpr)
+#print_pearson(hoh_yns, hoh_confs, hoh_ratings)
+print_kendall(hoh_yns, hoh_confs, hoh_ratings)
+print_spearman(hoh_yns, hoh_confs, hoh_ratings)
+
+
+
+
+
+# print("y/n * confidence  VS visual pleasure ratings")
+# print_pearson(yns, confs, vpr)
+# print()
+# print_pearson(d_yns, d_confs, d_vpr)
+# print()
+# print_pearson(hoh_yns, hoh_confs, hoh_vpr)
 
 
 

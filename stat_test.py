@@ -1,4 +1,8 @@
+# estimate sample size via power analysis
+from statsmodels.stats.power import TTestIndPower
+import statsmodels.stats.power as smp
 import pandas
+
 import numpy
 from sdt_metrics import dprime, HI, MI, CR, FA, SDT
 
@@ -175,6 +179,7 @@ for g in groups:
 
 
 
+#g = "deaf" 
 g = "hoh_deafened"
 cs = groups[g][2]
 yn = groups[g][0]
@@ -196,55 +201,79 @@ for user in range(1, len(groups[g][0])):
             rating['n'][v].append(cs[user][v])
 
 for v in range(1, 23):
-    #if v in [1, 6, 9, 14, 15, 20]:
-    if v in [1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21]:
-        print("variation {}: ({:.3f}, {:.3f})".format(v, numpy.mean(rating['y'][v]), numpy.mean(rating['n'][v])))
-        
-        
+    """
+        #     #if v in [1, 6, 9, 14, 15, 20]:
+        #     if v in [1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21]:
+        #         print("variation {}: ({:.3f}, {:.3f})".format(v, numpy.mean(rating['y'][v]), numpy.mean(rating['n'][v])))
+            # get mean rating
+            # sum_v = 0
+            # p_n = 0
+            # for i in cs:
+            #     p_n += cs[i]
+            #     sum_v += i*cs[i]
+            #     #print(i*cs[i], p_n)
 
+            # print("{:.3f}".format(sum_v/p_n))
+    """
+    ### do t-test on quality ratings between yes-no, for each variation.
+    y_shapiro = shapiro(rating['y'][v])
+    n_shapiro = shapiro(rating['n'][v])
+    if ((y_shapiro[1] > 0.05) and (n_shapiro[1] > 0.05)): # normal if p > .05
+        print(v, "h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
+        dhoh_levene = levene(rating['y'][v], rating['n'][v])
+        print("Test for variance:", dhoh_levene)
+        if dhoh_levene[1] > 0.05: # equal variance if p > .05
+            print("h(0): data are from equal variances -> cannot be rejected. There's evidence of equal variance") 
+            print("t-test assumptions are met")
+            print(ttest_ind(rating['y'][v], rating['n'][v]))
 
-
-
-    # get mean rating
-    # sum_v = 0
-    # p_n = 0
-    # for i in cs:
-    #     p_n += cs[i]
-    #     sum_v += i*cs[i]
-    #     #print(i*cs[i], p_n)
-
-    # print("{:.3f}".format(sum_v/p_n))
-
-
+    else:
+        #print("variation{}:".format(v), len(rating['y'][v]), len(rating['n'][v]))
+        mann_wit_result = mannwhitneyu(rating['y'][v], rating['n'][v])
+        if mann_wit_result[1] < 0.05:
+            print(v, "difference found", mann_wit_result)
+        else:
+            print("{} no significant difference - sampled from same distribution".format(v))
 
 # for q in range(0,4):
 #     print("question", q)
 
+#     if q == 0:
+#         print("deaf group mean, SD:", numpy.mean(dprimes['deaf']), numpy.std(dprimes['deaf']))
+#         print("hoh group mean, SD:", numpy.mean(dprimes['hoh_deafened']), numpy.std(dprimes['hoh_deafened']))
 
+#         d_shapiro = shapiro(dprimes['deaf'])
+#         hoh_shapiro = shapiro(dprimes['hoh_deafened'])
+#         print("Test for normality (deaf group, hoh group):", d_shapiro, hoh_shapiro)
+#         if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
+#             print("h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")            
+#             dhoh_levene = levene(dprimes['hoh_deafened'], dprimes['deaf'])
+#             print("Test for variance:", dhoh_levene)
+#             if dhoh_levene[1] > 0.05: # equal variance if p > .05
+#                 print("h(0): data are from equal variances -> cannot be rejected. There's evidence of equal variance") 
+#                 print("t-test assumptions are met")
+#                 df = len(dprimes['deaf']) + len(dprimes['hoh_deafened']) - 2
+#                 #print(ttest_ind(dprimes['deaf'], dprimes['hoh_deafened']), 'df:'+str(df))
+#                 print(ttest_ind(dprimes['hoh_deafened'], dprimes['deaf']), 'df:'+str(df))
 
-    # if q == 0:
-        # print("deaf group mean, SD:", numpy.mean(dprimes['deaf']), numpy.std(dprimes['deaf']))
-        # print("hoh group mean, SD:", numpy.mean(dprimes['hoh_deafened']), numpy.std(dprimes['hoh_deafened']))
+#                 print(len(dprimes['deaf']), len(dprimes['hoh_deafened']))
+#                 print(smp.ttest_power(0.8, nobs=len(dprimes['deaf']), alpha=0.05, alternative='two-sided'))
+#                 print(smp.ttest_power(0.8, nobs=len(dprimes['hoh_deafened']), alpha=0.05, alternative='two-sided'))
+                
+#                 # parameters for power analysis
+#                 effect = 0.8
+#                 alpha = 0.05
+#                 power = 0.8
+#                 # perform power analysis
+#                 result = TTestIndPower().solve_power(effect, power=power, nobs1=None, ratio=1.0, alpha=alpha)
+#                 print('Sample Size: %.3f' % result) # but we have only 21 sensitivities for each group to compare...
 
-        # d_shapiro = shapiro(dprimes['deaf'])
-        # hoh_shapiro = shapiro(dprimes['hoh_deafened'])
-        # print("Test for normality (deaf group, hoh group):", d_shapiro, hoh_shapiro)
-        # if d_shapiro[1] > 0.05 and hoh_shapiro[1] > 0.05: # normal if p > .05
-        #     print("h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
-        #     #dhoh_levene = levene(dprimes['deaf'], dprimes['hoh_deafened'])
-        #     dhoh_levene = levene(dprimes['hoh_deafened'], dprimes['deaf'])
-        #     print("Test for variance:", dhoh_levene)
-        #     if dhoh_levene[1] > 0.05: # equal variance if p > .05
-        #         print("h(0): data are from equal variances -> cannot be rejected. There's evidence of equal variance") 
-        #         print("t-test assumptions are met")
-        #         df = len(dprimes['deaf']) + len(dprimes['hoh_deafened']) - 2
-        #         #print(ttest_ind(dprimes['deaf'], dprimes['hoh_deafened']), 'df:'+str(df))
-        #         print(ttest_ind(dprimes['hoh_deafened'], dprimes['deaf']), 'df:'+str(df))
-        #     else:
-        #         print("not equal variance........")
-        # else:
-        #     print("probable not normally distributed")
-        #     print(mannwhitneyu(dprimes['deaf'], dprimes['hoh_deafened']))
+#             else:
+#                 print("not equal variance........")
+#         else:
+#             print("probable not normally distributed")
+
+#             print(mannwhitneyu(dprimes['deaf'], dprimes['hoh_deafened']))
 
 
 
