@@ -3,12 +3,13 @@ from statsmodels.stats.power import TTestIndPower
 import statsmodels.stats.power as smp
 import pandas
 
-import numpy
+import numpy as np
 from sdt_metrics import dprime, HI, MI, CR, FA, SDT
 
 from xlrd import open_workbook
 from xlsxwriter.workbook import Workbook
 
+import scipy
 from scipy.stats import shapiro
 from scipy.stats import levene
 from scipy.stats import mannwhitneyu
@@ -229,9 +230,26 @@ for v in range(1, 23):
 
     else:
         #print("variation{}:".format(v), len(rating['y'][v]), len(rating['n'][v]))
-        mann_wit_result = mannwhitneyu(rating['y'][v], rating['n'][v])
-        if mann_wit_result[1] < 0.05:
-            print(v, "difference found", mann_wit_result)
+        x, y = rating['y'][v], rating['n'][v]
+        u, p = mannwhitneyu(x, y, alternative='two-sided')
+        m_u = len(x)*len(y)/2
+        sigma_u = np.sqrt(len(x)*len(y)*(len(x)+len(y)+1)/12)
+        z = (u - m_u)/sigma_u
+        pval = 2*scipy.stats.norm.cdf(z)
+
+        if p < 0.05:
+            # print("{}: sigma_u={:.3f}, z={:.3f}, pval={:.3f}".format(v, sigma_u, z, pval))
+            # print("{}: U={:.3f} p={:.3f}".format(v, u, p))
+
+            if u > m_u:
+                print("{}: retain H0, obtained U={:.3f} > critical U={:.3f}".format(v, u, sigma_u))
+            else:
+                print("{}: reject H0, difference found. obtained U={:.3f} > critical U={:.3f}".format(v, u, sigma_u))
+                
+            #if the obtained U value is larger than the critical U value, then retain H0:
+            #if the obtained U value is smaller than the critical U value, then reject H0: 
+
+
         else:
             print("{} no significant difference - sampled from same distribution".format(v))
 

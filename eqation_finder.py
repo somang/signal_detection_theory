@@ -13,12 +13,11 @@ from scipy.stats import mannwhitneyu
 from scipy.stats.stats import pearsonr   
 from scipy.stats.stats import kendalltau
 from scipy.stats.stats import spearmanr
+import matplotlib.pyplot as plt
 
 import math
 
 xl = pandas.ExcelFile('q1q4_handled.xlsx')
-
-
 
 def multiply_two(x):
     yn = x[0] # check the y/n answer
@@ -36,6 +35,21 @@ def handle_list(df, di):
                     di[c].append(r[c])
     return di
 
+def check_shapiro(yns, confs, ratings):
+    for v in range(1,23):
+        p = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))
+        sha_y, sha_r = shapiro(p)[1], shapiro(ratings[v])[1]  
+        if sha_y < 0.05:
+            flag = "yns "
+            if sha_r < 0.05:
+                flag += "ratings"
+                print("{}: {} data is not normally distributed. ({:.3f}, {:.3f})".format(v, flag, sha_y, sha_r))
+        else:
+            print("{} data is normal".format(v))
+        
+            
+
+
 def print_pearson(yns, confs, ratings):
     for v in range(1,23):
         # p = yns multiply by conf then check pearson's r
@@ -44,14 +58,44 @@ def print_pearson(yns, confs, ratings):
 
 def print_kendall(yns, confs, ratings): # non parametric kendall's tau b
     for v in range(1,23):
-        p = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))
-        print(v, kendalltau(p, ratings[v])) # x, y
+        ynsconf = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))        
+        t, p = kendalltau(ynsconf, ratings[v])
+        if p > 0.05:
+            print("{}: p > 0.05".format(v))
+        else:
+            if t < 0.6:
+                print("{}:                  kendall's moderate t={:.3f}".format(v, t)) # x, y
+            elif t >= 0.6:
+                print("{}: kendall's high t={:.3f}".format(v, t))
 
 def print_spearman(yns, confs, ratings): # non parametric
     for v in range(1,23):
-        p = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))
-        print(v, spearmanr(p, ratings[v])) # x, y
+        ynsconf = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))        
+        r, p = spearmanr(ynsconf, ratings[v])
+        if p > 0.05:
+            print("{}: p > 0.05".format(v))
+        else:
+            if r < 0.6 and r >= 0.4:
+                print("{}:                  spearman's moderate r={:.3f}".format(v, r))
+            elif r >= 0.6:
+                print("{}: spearman's high r={:.3f}".format(v, r))
 
+def print_kendall_and_spearman(yns, confs, ratings):
+    for v in range(1,23):
+        ynsconf = list(map(lambda x: multiply_two(x), list(zip(yns[v], confs[v]))))        
+        r, sp = spearmanr(ynsconf, ratings[v])
+        t, kp = kendalltau(ynsconf, ratings[v])
+        pr, pp = pearsonr(ynsconf, ratings[v])
+
+        if sp > 0.05 and kp > 0.05:
+            print("{}: p > 0.05, sp={}, kp={}".format(v, sp, kp))
+        else:
+            if (0 < r < 0.4) or (0 < t < 0.4):
+                print("{}: Low - kendall t={:.3f}, spearman r={:.3f}".format(v, t, r))
+            elif (0.4 <= r < 0.6) or (0.4 <= t < 0.6):
+                print("{}: moderate - kendall t={:.3f}, spearman r={:.3f}".format(v, t, r))
+            else:
+                print("{}: high - kendall t={:.3f}, spearman r={:.3f}".format(v, t, r))
 
 
 # q1 "Did you see any errors in the caption?"
@@ -107,32 +151,29 @@ for sn in xl.sheet_names:
         df = pandas.read_excel(xl, sheet_name=sn, header=None, index_col=False)        
         hoh_vpr = handle_list(df, hoh_vpr)
 
-print("y/n * confidence  VS caption quality ratings")
-#print_pearson(yns, confs, ratings)
-print_kendall(yns, confs, ratings)
-print_spearman(yns, confs, ratings)
 
-print()
-#print_pearson(d_yns, d_confs, d_ratings)
-print_kendall(d_yns, d_confs, d_ratings)
-print_spearman(d_yns, d_confs, d_ratings)
+# is data normal?
+#check_shapiro(yns, confs, ratings)
+#check_shapiro(d_yns, d_confs, d_ratings)
+#check_shapiro(hoh_yns, hoh_confs, hoh_ratings)
+#print("OVERALL- Y/N+Confidence VS. Quality")
+#print_kendall_and_spearman(yns, confs, ratings)
+#print("DEAF- Y/N+Confidence VS. Quality")
+#print_kendall_and_spearman(d_yns, d_confs, d_ratings)
+#print("\nHOH- Y/N+Confidence VS. Quality")
+#print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_ratings)
 
-print()
-#print_pearson(hoh_yns, hoh_confs, hoh_ratings)
-print_kendall(hoh_yns, hoh_confs, hoh_ratings)
-print_spearman(hoh_yns, hoh_confs, hoh_ratings)
-
-
-
-
-
-# print("y/n * confidence  VS visual pleasure ratings")
-# print_pearson(yns, confs, vpr)
-# print()
-# print_pearson(d_yns, d_confs, d_vpr)
-# print()
-# print_pearson(hoh_yns, hoh_confs, hoh_vpr)
-
+#print("y/n * confidence  VS visual pleasure ratings")
+# is data normal?
+# check_shapiro(yns, confs, vpr)
+# check_shapiro(d_yns, d_confs, d_vpr)
+# check_shapiro(hoh_yns, hoh_confs, hoh_vpr)
+#print("OVERALL- Y/N+Confidence VS. Quality")
+# #print_kendall_and_spearman(yns, confs, vpr)
+# print("\n\nDEAF- Y/N+Confidence VS. VISUAL PLEASURE")
+# print_kendall_and_spearman(d_yns, d_confs, d_vpr)
+# print("\nHOH- Y/N+Confidence VS. VISUAL PLEASURE")
+# print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_vpr)
 
 
 """
