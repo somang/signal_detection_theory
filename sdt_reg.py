@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(1, 1)
 
-yns = { 
+d_yns = { 
     1:(20, 32), 2:(18, 34), 3:(17, 35), 4:(19, 33), 5:(17, 35), 6:(22, 30),
     7:(16, 36), 8:(23, 29), 9:(22, 30), 10:(25, 27), 11:(20, 32), 12:(18, 34),
     13:(23, 29), 14:(27, 25), 15:(29, 23), 16:(23, 29), 17:(16, 36), 18:(17, 35),
@@ -49,6 +49,16 @@ cs = {
     20:0.098, 21:0.293, 22:0.319
 }
 
+
+d_avg_ratings = {
+    6: (2.000, 4.083), 9: (1.769, 3.833), 14: (2.133, 3.800), 15: (1.800, 3.900), 20: (1.929, 3.636)
+}
+
+hoh_avg_ratings = {
+    4: (2.900, 3.765), 5: (2.111, 4.111), 6: (2.889, 3.944), 8: (2.929, 4.000), 9: (2.222, 3.833), 10: (2.154, 4.000),
+    11: (1.909, 4.125), 12: (2.444, 4.222), 13: (2.000, 3.933), 14: (2.833, 4.133), 15: (2.286, 4.000), 16: (2.636, 4.125), 
+    19: (1.700, 4.059), 20: (2.714, 3.923), 21: (2.444, 3.833)
+}
 
 v1 = yns[1]
 for v in range(2, 5): # 23):
@@ -94,5 +104,18 @@ for v in range(2, 5): # 23):
     # ax.plot(y, sig_d.pdf(y), ls=':', c='r')
     # ax.axvline(x=sdt_obj.c(), ls='--')
     # plt.show()
+
+
+    # There should be a way to develop a prediction function, which
+    # takes the p(H), p(M), p(FA) to predict ratings, R.
+    # We know that
+    # high p(H) implies low R and
+    # high p(M) implies high R
+    # The fitting line, then should include
+
+    #     dprime, c -> p(H) and p(FA) -> rating R
+
+
+
 
 
