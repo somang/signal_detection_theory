@@ -1,4 +1,15 @@
-# let's read q1q3handled
+import sdt_metrics
+from sdt_metrics import dprime, HI, MI, CR, FA, SDT
+
+import numpy as np
+import numpy.polynomial.polynomial as poly
+
+from sklearn import metrics
+from sklearn.metrics import roc_auc_score
+
+from line import Line
+import re
+
 import csv
 from xlsxwriter.workbook import Workbook
 
@@ -7,15 +18,23 @@ from xlrd import open_workbook
 
 import pandas
 
+import scipy.stats
 from scipy import stats
+from scipy.stats import norm
 from scipy.stats import shapiro
 from scipy.stats import mannwhitneyu
 from scipy.stats.stats import pearsonr   
 from scipy.stats.stats import kendalltau
 from scipy.stats.stats import spearmanr
+
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib.colors as colors
+from matplotlib import cm
+from cycler import cycler
 
 import math
+from math import exp,sqrt,pi
 
 xl = pandas.ExcelFile('q1q4_handled.xlsx')
 
@@ -174,6 +193,12 @@ for sn in xl.sheet_names:
 # print_kendall_and_spearman(d_yns, d_confs, d_vpr)
 # print("\nHOH- Y/N+Confidence VS. VISUAL PLEASURE")
 # print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_vpr)
+rating = {'y':{}, 'n':{}}
+for i in range(1, 23):
+    rating['y'][i] = []
+    rating['n'][i] = []
+
+
 
 
 for v in range(1,23):
@@ -181,3 +206,49 @@ for v in range(1,23):
     p = list(map(lambda x: multiply_two(x), put_two))
     for i in range(len(p)):
         print(p[i], d_ratings[v][i])
+
+
+
+        """
+        1. function g(dprime, c) -> p(H), p(FA)
+        2. given p(H) and p(FA), calcaulate the estimated quality rating
+            -> what is the relationship between 
+                p(H): Low rating, P(M): High rating
+
+
+                Assume hoh v8: 5 low frequency missing word
+                d' = 0.582
+                c = 0.244
+                Compare the distance between
+                    high rating - low rating
+                    variation 8: (2.929, 4.000)
+
+                p(H)    p(M)        |   p(FA)
+                0.519   0.481       |   0.296
+                
+
+
+                                    -> 0.519, 0.296 -> 2.929
+                (0.582, 0.244)    
+                                    -> 0.481, 0.296 -> 4.000
+
+        x = np.linspace(0, 1, 100)
+        coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
+        ffit = poly.polyval(x, coefs)
+        ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
+
+        """
+
+
+
+
+def g(dprime, c):
+    """ 1. function g(dprime, c) -> p(H), p(FA) """
+    noi_d = scipy.stats.norm(loc=0, scale=1)
+    sig_d = scipy.stats.norm(loc=dprime, scale=1) #where loc is the mean and scale is the std dev
+    # estimated rates
+    epm = sig_d.cdf(dprime/2 + c)
+    epcr = noi_d.cdf(dprime/2 + c)
+    eph = 1-epm # sig_d.sf(c)
+    epfa = 1-epcr # noi_d.sf(c)
+    return (eph, epfa)

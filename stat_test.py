@@ -3,7 +3,7 @@ from statsmodels.stats.power import TTestIndPower
 import statsmodels.stats.power as smp
 import pandas
 
-import numpy as np
+import numpy
 from sdt_metrics import dprime, HI, MI, CR, FA, SDT
 
 from xlrd import open_workbook
@@ -181,7 +181,8 @@ for g in groups:
 
 
 #g = "deaf" 
-g = "hoh_deafened"
+g = "deaf"
+#g = "hoh_deafened"
 cs = groups[g][2]
 yn = groups[g][0]
 yn_cr = groups[g][1]
@@ -191,67 +192,65 @@ for i in range(1, 23):
     rating['y'][i] = []
     rating['n'][i] = []
 
-
 for user in range(1, len(groups[g][0])):
     uid = yn[user][0]
     for v in range(1,23):
-        #print(uid + ":", yn[user][v] * yn_cr[user][v], cs[user][v])
         if yn[user][v] == 1:
             rating['y'][v].append(cs[user][v])
         elif yn[user][v] == -1:
             rating['n'][v].append(cs[user][v])
 
 for v in range(1, 23):
-    """
-        #     #if v in [1, 6, 9, 14, 15, 20]:
-        #     if v in [1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21]:
-        #         print("variation {}: ({:.3f}, {:.3f})".format(v, numpy.mean(rating['y'][v]), numpy.mean(rating['n'][v])))
-            # get mean rating
-            # sum_v = 0
-            # p_n = 0
-            # for i in cs:
-            #     p_n += cs[i]
-            #     sum_v += i*cs[i]
-            #     #print(i*cs[i], p_n)
+    pos_d_variations = []
+    if g == "deaf":
+        pos_d_variations = [1, 6, 9, 14, 15, 20]
+    elif g == "hoh_deafened":
+        pos_d_variations = [1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21]
 
-            # print("{:.3f}".format(sum_v/p_n))
-    """
-    ### do t-test on quality ratings between yes-no, for each variation.
-    y_shapiro = shapiro(rating['y'][v])
-    n_shapiro = shapiro(rating['n'][v])
-    if ((y_shapiro[1] > 0.05) and (n_shapiro[1] > 0.05)): # normal if p > .05
-        print(v, "h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
-        dhoh_levene = levene(rating['y'][v], rating['n'][v])
-        print("Test for variance:", dhoh_levene)
-        if dhoh_levene[1] > 0.05: # equal variance if p > .05
-            print("h(0): data are from equal variances -> cannot be rejected. There's evidence of equal variance") 
-            print("t-test assumptions are met")
-            print(ttest_ind(rating['y'][v], rating['n'][v]))
+    if v in pos_d_variations:
+        avgr_hits = numpy.mean(rating['y'][v])
+        avgr_miss = numpy.mean(rating['n'][v])
+        print("variation {}: ({:.3f}, {:.3f})".format(v, avgr_hits, avgr_miss))
+        
+    
 
-    else:
-        #print("variation{}:".format(v), len(rating['y'][v]), len(rating['n'][v]))
-        x, y = rating['y'][v], rating['n'][v]
-        u, p = mannwhitneyu(x, y, alternative='two-sided')
-        m_u = len(x)*len(y)/2
-        sigma_u = np.sqrt(len(x)*len(y)*(len(x)+len(y)+1)/12)
-        z = (u - m_u)/sigma_u
-        pval = 2*scipy.stats.norm.cdf(z)
 
-        if p < 0.05:
-            # print("{}: sigma_u={:.3f}, z={:.3f}, pval={:.3f}".format(v, sigma_u, z, pval))
-            # print("{}: U={:.3f} p={:.3f}".format(v, u, p))
+    # ### do t-test on quality ratings between yes-no, for each variation.
+    # y_shapiro = shapiro(rating['y'][v])
+    # n_shapiro = shapiro(rating['n'][v])
+    # if ((y_shapiro[1] > 0.05) and (n_shapiro[1] > 0.05)): # normal if p > .05
+    #     print(v, "h(0): data are from normal distribution -> cannot be rejected. There's an evidence of normal distribution.")
+    #     dhoh_levene = levene(rating['y'][v], rating['n'][v])
+    #     print("Test for variance:", dhoh_levene)
+    #     if dhoh_levene[1] > 0.05: # equal variance if p > .05
+    #         print("h(0): data are from equal variances -> cannot be rejected. There's evidence of equal variance") 
+    #         print("t-test assumptions are met")
+    #         print(ttest_ind(rating['y'][v], rating['n'][v]))
 
-            if u > m_u:
-                print("{}: retain H0, obtained U={:.3f} > critical U={:.3f}".format(v, u, sigma_u))
-            else:
-                print("{}: reject H0, difference found. obtained U={:.3f} > critical U={:.3f}".format(v, u, sigma_u))
+    # else:
+    #     #print("variation{}:".format(v), len(rating['y'][v]), len(rating['n'][v]))
+    #     x, y = rating['y'][v], rating['n'][v]
+    #     u, p = mannwhitneyu(x, y, alternative='two-sided')
+    #     m_u = len(x)*len(y)/2
+    #     sigma_u = np.sqrt(len(x)*len(y)*(len(x)+len(y)+1)/12)
+    #     z = (u - m_u)/sigma_u
+    #     pval = 2*scipy.stats.norm.cdf(z)
+
+    #     if p < 0.05:
+    #         # print("{}: sigma_u={:.3f}, z={:.3f}, pval={:.3f}".format(v, sigma_u, z, pval))
+    #         # print("{}: U={:.3f} p={:.3f}".format(v, u, p))
+
+    #         if u > m_u:
+    #             print("{}: retain H0, obtained U={:.3f} > critical U={:.3f}".format(v, u, sigma_u))
+    #         else:
+    #             print("{}: reject H0, difference found. obtained U={:.3f} > critical U={:.3f}".format(v, u, sigma_u))
                 
-            #if the obtained U value is larger than the critical U value, then retain H0:
-            #if the obtained U value is smaller than the critical U value, then reject H0: 
+    #         #if the obtained U value is larger than the critical U value, then retain H0:
+    #         #if the obtained U value is smaller than the critical U value, then reject H0: 
 
 
-        else:
-            print("{} no significant difference - sampled from same distribution".format(v))
+    #     else:
+    #         print("{} no significant difference - sampled from same distribution".format(v))
 
 # for q in range(0,4):
 #     print("question", q)
