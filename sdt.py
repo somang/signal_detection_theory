@@ -82,8 +82,8 @@ def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, tru
         ffit = poly.polyval(x, coefs)
         ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
     
-    #ax.plot(fpr, tpr, label='ROC', marker='.', linewidth=2,  markersize=10) #, linestyle="None")    
-    #ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0", linewidth=2,  markersize=10) # guide line
+    ax.plot(fpr, tpr, label='ROC', marker='.', linewidth=2,  markersize=10) #, linestyle="None")    
+    ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0", linewidth=2,  markersize=10) # guide line
     ax.set_xlabel('False-Alarm Rate', fontsize=12)
     ax.set_ylabel('Hit Rate', fontsize=12)
     ax.set_title(var + "-" + 'ROC Curve')
@@ -130,8 +130,10 @@ if __name__ == "__main__":
                 fname = input_file.split('_')[0] + "_" + hit_list[0].replace(":", "_") # a_V1_No Delay error (3 sec.)
                 
                 # set grid and color 
-                fig = plt.figure() #tight_layout=True)
+                #fig = plt.figure() #tight_layout=True)
                 #fig = plt.figure(figsize=(4,3))
+                fig = plt.figure(figsize=(19.2,10.8), dpi=100)
+                
 
                 gs = gridspec.GridSpec(3, 9)
                 n = 100
@@ -153,15 +155,14 @@ if __name__ == "__main__":
                 #ax = fig.add_subplot(gs[0:, 0:])
                 draw_sdt(tpr, fpr, sdt_obj, ax)
                 
-                if fname.split('_')[0] == 'input/h' and fname.split('_')[1] == 'V8':
-                    plt.show()
-                # head = input_file.split("/")[1].split("_")[0]             
-                # imgfname = re.sub(r":| ", "_", hit_list[0])
-                # file_name = "img/" + head + "/" + head + "_" + imgfname + '.png'
-                # print(file_name)
+                #if fname.split('_')[0] == 'input/h' and fname.split('_')[1] == 'V8':
+                #    plt.show()
+                head = input_file.split("/")[1].split("_")[0]             
+                imgfname = re.sub(r":| ", "_", hit_list[0])
+                file_name = "img/" + head + "/" + head + "_" + imgfname + '.png'
+                print(file_name)
 
-                #plt.figure(figsize=(19.2,10.8), dpi=100)
-                # plt.savefig(file_name)
+                plt.savefig(file_name)
                 plt.close()
                 
 
