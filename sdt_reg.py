@@ -46,7 +46,7 @@ hoh_yns = {
 }
 
 # each rating pairs are:
-#                               (rating when people said 'yes', rating when people said 'no')
+# (rating when people said 'yes', rating when people said 'no')
 # where 5 means high satisfactory quality and 1 means dissatisfacton
 d_avg_ratings = {
     6: (2.000, 4.083), 9: (1.769, 3.833), 14: (2.133, 3.800), 15: (1.800, 3.900), 20: (1.929, 3.636)
@@ -58,7 +58,7 @@ hoh_avg_ratings = {
     19: (1.700, 4.059), 20: (2.714, 3.923), 21: (2.444, 3.833)
 }
 
-
+yns = d_yns
 v1 = yns[1]
 for v in range(2, 23):
     h, m, fa, cr = yns[v][0], yns[v][1], v1[0], v1[1]
@@ -68,11 +68,24 @@ for v in range(2, 23):
     # generate
     noi_d = scipy.stats.norm(loc=0, scale=1)
     sig_d = scipy.stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # estimated rates
-    epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c())
-    epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c())
-    eph = 1-epm # sig_d.sf(sdt_obj.c())
-    epfa = 1-epcr # noi_d.sf(sdt_obj.c())
+    epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss
+    epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_correctrejection
+    eph = 1-epm # sig_d.sf(sdt_obj.c()) # estimated_probability_of_hit
+    epfa = 1-epcr # noi_d.sf(sdt_obj.c()) #estimated_probability_of_falsealarm
     # to the right of the criterion of signal should be hits -> using sf because it's greater
     # to the left of the criterion of signal should be misses -> using cdf because it's less than c
     # to the right of the criterion of noise should be false_alarm -> using sf because it's greater
@@ -128,6 +141,7 @@ for v in range(2, 23):
 
         ######################### then, now we have four points ready to be fitted...
         ### first, one variable and linear polynomial regression (degree of 2)
+        # ptset_x = ptset_ph
         # coefs = poly.polyfit(ptset_x, ptset_y, 2) # Fit with polyfit
         # print(coefs)
         # f = np.poly1d(coefs)
@@ -149,8 +163,8 @@ for v in range(2, 23):
         for i in range(len(ptset_ph)):
             X.append([ptset_ph[i], ptset_pfa[i]])
 
-        poly = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
-        X_ = poly.fit_transform(X) #transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
+        polynom_feat = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
+        X_ = polynom_feat.fit_transform(X) #transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
         #print(X_)
 
         reg = linear_model.LinearRegression() # generate the regression object
@@ -160,11 +174,11 @@ for v in range(2, 23):
         # now we have a fitted regression function.
         # let's try to predict... [p(H), p(FA)] -> R
         X_test = [
-            [0.2, 0.2], 
+            [0.6, 0.48], 
             [0, epfa],
             [1, epfa]
         ]
-        X_test_ = poly.fit_transform(X_test)
+        X_test_ = polynom_feat.fit_transform(X_test)
 
         # regression coefficients 
         #print('Coefficients: \n', reg.coef_) 
@@ -174,4 +188,6 @@ for v in range(2, 23):
         
         for i in range(len(Y_test)):
             print("Predictions = {:.3f}".format(Y_test[i]))
+
+        print("------------------------------------------------------------------------------------")
         

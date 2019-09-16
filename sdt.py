@@ -1,60 +1,44 @@
 import sdt_metrics
 from sdt_metrics import dprime, HI, MI, CR, FA, SDT
-
 import numpy as np
 import numpy.polynomial.polynomial as poly
-
 from sklearn import metrics
 from sklearn.metrics import roc_auc_score
-
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
 from cycler import cycler
-
-
 from scipy import stats
 from scipy.stats import norm
-
 import math
 from math import exp,sqrt,pi
-
 from line import Line
 import re
-
-
 
 def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positive rate (signal hit), in z scores
     # Display the probability density function (pdf)
     x = np.linspace(-5, 5, 500)     # define a big enough x interval 
-
     noise_pdf = norm.pdf(x)
     error_pdf = norm.pdf(x, sdt_obj.dprime(), 1)              # get the norm.pdf for x interval
     ax.plot(x, noise_pdf, "g", alpha=0.9, label="ideal (noise)", linewidth=2, linestyle = '-.')
     ax.plot(x, error_pdf, "r", alpha=0.9, label="error", linewidth=2)
-
     plt.axvline(x=sdt_obj.c(), linestyle='--', linewidth=2) #, label="c= "+str(c))
     plt.text(sdt_obj.c() + 0.01, 0.01, "c = " + '{:{width}.{prec}f}'.format(sdt_obj.c(), width=5, prec=3), fontsize=12)
-
     #plt.vlines(0, 0, 0.4, linestyle='-.', color="m", linewidth=2)
     #plt.vlines(sdt_obj.dprime(), 0, 0.4, linestyle='-.', color="m", linewidth=2)
     plt.hlines(0.4, 0, sdt_obj.dprime())
     plt.text(sdt_obj.dprime(), 0.405, "d' = " + '{:{width}.{prec}f}'.format(sdt_obj.dprime(), width=5, prec=3), fontsize=12)
-
     # calculate c for each confidence level
     ztpr_r = list(map(lambda x: norm.ppf(x), get_cumul_z(tpr)))
     zfpr_r = list(map(lambda x: norm.ppf(x), get_cumul_z(fpr)))
-    dprime_r, c_r = [], []
-    
+    dprime_r, c_r = [], []  
     for i in range(len(ztpr_r)):
         dprime_r.append( ztpr_r[i] - zfpr_r[i] )
         c_r.append(-1 * ( ztpr_r[i] + zfpr_r[i] ) / 2)
-
     for i in c_r:
         if not math.isnan(i) and not math.isinf(i):
             plt.vlines(i, 0, 0.4, linestyle=':', linewidth=1)
-
     # if dprime > 0:
     #     ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='green', alpha=0.15, label="hit") # , interpolate=True)
     #     ax.fill_between(x, noise_pdf, 0, where=x > c, facecolor='red', alpha=0.15, label="false alarm") #, interpolate=True)
@@ -65,7 +49,6 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
     #     ax.fill_between(x, noise_pdf, error_pdf, where=x > c, facecolor='red', alpha=0.15, label="false alarm")
     #     ax.fill_between(x, error_pdf, 0, where=x < c, facecolor='blue', alpha=0.15, label="correct rejection")
     #     ax.fill_between(x, error_pdf, noise_pdf, where=x < c, facecolor='orange', alpha=0.15, label="miss", hatch="/")
-
     ax.set_xlim([-5,5])
     ax.set_ylim([0, 0.5])
     ax.set_title("Probability Distribution", fontsize=14)
@@ -78,7 +61,7 @@ def draw_sdt(tpr, fpr, sdt_obj, ax): # false-positive rate (noise), true-positiv
 def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
     if p:
         x = np.linspace(0, 1, 100)
-        coefs = poly.polyfit(fpr, tpr, 2) # Fit with polyfit
+        coefs = poly.polyfit(fpr, tpr, 2) # Polynomial fitting line, this can be used instead of the default line.
         ffit = poly.polyval(x, coefs)
         ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
     
@@ -124,12 +107,15 @@ if __name__ == "__main__":
                 # Now lets create a list with the rates of hit and false alarm
                 for i in range(1, len(hit_list[1:])):
                     hit_list[i] = hit_list[i] / (hit + miss)
-                
+
                 tpr, fpr = hit_list[1:], fa_list[1:]
                 tpr_cum, fpr_cum = get_cumul_z(tpr), get_cumul_z(fpr)
+
+
+
                 fname = input_file.split('_')[0] + "_" + hit_list[0].replace(":", "_") # a_V1_No Delay error (3 sec.)
                 
-                # set grid and color 
+                # set grid and color
                 #fig = plt.figure() #tight_layout=True)
                 #fig = plt.figure(figsize=(4,3))
                 fig = plt.figure(figsize=(19.2,10.8), dpi=100)
