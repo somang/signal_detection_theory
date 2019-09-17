@@ -47,10 +47,6 @@ def get_cumul_z(rate):
     return tmp
 
 
-
-
-
-
 # What do I need?
 # input: factor variable value x
 # output: probability of hit (H) and false-alarm (FA) given x
@@ -60,6 +56,37 @@ def get_cumul_z(rate):
 # then get the c value probabilities p(H) and p(FA)
 
 if __name__ == "__main__":
+    fig, ax = plt.subplots(1, 1)
+
+    d_yns = {
+        1:(12, 13), 2:(11, 14), 3:(9, 16), 4:(9, 16), 5:(8, 17), 6:(13, 12), 7:(12, 13), 8:(9, 16),
+        9:(13, 12), 10:(12, 13), 11:(9, 16), 12:(9, 16), 13:(11, 14), 14:(15, 10), 15:(15, 10),
+        16:(12, 13), 17:(8, 17), 18:(9, 16), 19:(12, 13), 20:(14,11), 21:(11,14), 22:(12,13)
+    }
+
+    hoh_yns = { 
+        1:(8,19), 2:(7,20), 3:(8,19), 4:(10,17), 5:(9,18),6:(9,18),7:(4,23),8:(14,13),9:(9,18),10:(13,14),
+        11:(11,16),12:(9,18),13:(12,15),14:(12,15),15:(14,13),16:(11,16),17:(8,19),18:(8,19),19:(10,17),
+        20:(14,13),21:(9,18),22:(7,20)
+    }
+
+    # each rating pairs are:
+    # (rating when people said 'yes', rating when people said 'no')
+    # where 5 means high satisfactory quality and 1 means dissatisfacton
+    d_avg_ratings = {
+        6: (2.000, 4.083), 9: (1.769, 3.833), 14: (2.133, 3.800), 15: (1.800, 3.900), 20: (1.929, 3.636)
+    }
+
+    hoh_avg_ratings = {
+        4: (2.900, 3.765), 5: (2.111, 4.111), 6: (2.889, 3.944), 8: (2.929, 4.000), 9: (2.222, 3.833), 10: (2.154, 4.000),
+        11: (1.909, 4.125), 12: (2.444, 4.222), 13: (2.000, 3.933), 14: (2.833, 4.133), 15: (2.286, 4.000), 16: (2.636, 4.125), 
+        19: (1.700, 4.059), 20: (2.714, 3.923), 21: (2.444, 3.833)
+    }
+
+    yns = d_yns
+    v1 = yns[1]
+
+
     #files = ['input/a_rating_data.in', 'input/d_rating_data.in', 'input/h_rating_data.in']
     files = [ 'input/d_confidence_rating_data.in', 'input/h_confidence_rating_data.in']
     for input_file in files:
@@ -79,7 +106,7 @@ if __name__ == "__main__":
             """###############################################################
             ## GET HIT RATE, INTEGRATE THE CONFIDENCE RATINGS FOR ROC CURVE ##
             ###############################################################""" 
-            for line in range(1, len(content)-1, 1):
+            for line in range(1, len(content)-1, 1): # from 2 to 22, because v1 would be FA
                 hit_line = content[line]
                 hit_list = list(map(lambda x: x.strip('\n'), hit_line.split("\t")))
                 v_name = hit_list[0]
@@ -98,55 +125,23 @@ if __name__ == "__main__":
 
                 coefs = poly.polyfit(fpr, tpr, 2) # Polynomial fitting line, this can be used instead of the default line.
                 print(v_name, coefs)
-                # x = np.linspace(0, 1, 10)
-                # ffit = poly.polyval(x, coefs)
+                x = np.linspace(0, 1, 10)
+                ffit = poly.polyval(x, coefs)
+                print(ffit)
+
+                #To create a frozen distribution:
+                p_h, p_m, p_fa, p_cr = hit/(hit+miss), miss/(hit+miss), false_alarm/(false_alarm+correct_rejection), correct_rejection/(false_alarm+correct_rejection)
                 
+                # generate
+                noi_d = stats.norm(loc=0, scale=1)
+                sig_d = stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
+                
+                # estimated rates
+                epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss
+                epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_correctrejection
+                eph = 1-epm # sig_d.sf(sdt_obj.c()) # estimated_probability_of_hit
+                epfa = 1-epcr # noi_d.sf(sdt_obj.c()) #estimated_probability_of_falsealarm
 
-
-#To create a frozen distribution:
-fig, ax = plt.subplots(1, 1)
-
-d_yns = {
-    1:(12, 13), 2:(11, 14), 3:(9, 16), 4:(9, 16), 5:(8, 17), 6:(13, 12), 7:(12, 13), 8:(9, 16),
-    9:(13, 12), 10:(12, 13), 11:(9, 16), 12:(9, 16), 13:(11, 14), 14:(15, 10), 15:(15, 10),
-    16:(12, 13), 17:(8, 17), 18:(9, 16), 19:(12, 13), 20:(14,11), 21:(11,14), 22:(12,13)
-}
-
-hoh_yns = { 
-    1:(8,19), 2:(7,20), 3:(8,19), 4:(10,17), 5:(9,18),6:(9,18),7:(4,23),8:(14,13),9:(9,18),10:(13,14),
-    11:(11,16),12:(9,18),13:(12,15),14:(12,15),15:(14,13),16:(11,16),17:(8,19),18:(8,19),19:(10,17),
-    20:(14,13),21:(9,18),22:(7,20)
-}
-
-# each rating pairs are:
-# (rating when people said 'yes', rating when people said 'no')
-# where 5 means high satisfactory quality and 1 means dissatisfacton
-d_avg_ratings = {
-    6: (2.000, 4.083), 9: (1.769, 3.833), 14: (2.133, 3.800), 15: (1.800, 3.900), 20: (1.929, 3.636)
-}
-
-hoh_avg_ratings = {
-    4: (2.900, 3.765), 5: (2.111, 4.111), 6: (2.889, 3.944), 8: (2.929, 4.000), 9: (2.222, 3.833), 10: (2.154, 4.000),
-    11: (1.909, 4.125), 12: (2.444, 4.222), 13: (2.000, 3.933), 14: (2.833, 4.133), 15: (2.286, 4.000), 16: (2.636, 4.125), 
-    19: (1.700, 4.059), 20: (2.714, 3.923), 21: (2.444, 3.833)
-}
-
-yns = d_yns
-v1 = yns[1]
-for v in range(2, 23):
-    h, m, fa, cr = yns[v][0], yns[v][1], v1[0], v1[1]
-    sdt_obj = SDT(HI=h, MI=m, FA=fa, CR=cr)
-    ph, pm, pfa, pcr = h/(h+m), m/(h+m), fa/(fa+cr), cr/(fa+cr)
-    
-    # generate
-    noi_d = stats.norm(loc=0, scale=1)
-    sig_d = stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
-    
-    # estimated rates
-    epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss
-    epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_correctrejection
-    eph = 1-epm # sig_d.sf(sdt_obj.c()) # estimated_probability_of_hit
-    epfa = 1-epcr # noi_d.sf(sdt_obj.c()) #estimated_probability_of_falsealarm
 """ 
     ####################################################################
     # let's find a function that can predict ratings from hit rates.
