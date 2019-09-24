@@ -80,6 +80,51 @@ def parse_v_name(vname):
     return v
     
     
+def get_regression_model(function_list, key, reg_function_list, avg_ratings):
+    print(key, function_list[key])
+
+    sdt_obj = function_list[key]
+    # generate normal curves
+    noi_d = stats.norm(loc=0, scale=1)
+    sig_d = stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
+
+    # estimated rates
+    epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss
+    epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_correctrejection
+    eph = 1-epm # sig_d.sf(sdt_obj.c()) # estimated_probability_of_hit
+    epfa = 1-epcr # noi_d.sf(sdt_obj.c()) #estimated_probability_of_falsealarm
+    ####################################################################
+    # let's find a function that can predict ratings from hit rates.
+    #######################
+    ptset_ph, ptset_y = [0, 1], [5, 0]
+    # each point has a tuple (p(H), Rating).
+
+    print("p(H):{:.3f} p(M):{:.3f} p(FA):{:.3f} => R:{}".format(eph, epm, epfa, avg_ratings[key]))
+    # now, let's add two more points.
+    ptset_ph.append(eph)
+    ptset_y.append(avg_ratings[key][0])
+    ptset_ph.append(epm)
+    ptset_y.append(avg_ratings[key][1])
+    
+    ####################################################### what about p(FA) rates then?
+    # Let's include pfa
+    ptset_pfa = [epfa, epfa, epfa, epfa] # to match the number of points we have
+    # now this becomes a multivariate regression model    
+    #X is the independent variable (bivariate in this case)
+    X = []
+    for i in range(len(ptset_ph)):
+        X.append([ptset_ph[i], ptset_pfa[i]])
+
+    polynom_feat = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
+    X_ = polynom_feat.fit_transform(X) #transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
+    #print(X_)
+    reg = linear_model.LinearRegression() # generate the regression object
+    #preform the actual regression
+    reg.fit(X_, ptset_y) # ptset_y is the dependent data
+    reg_function_list[key] = reg # add the regression model to the list.
+        
+    return reg_function_list
+
 # What do I need?
 # input: factor variable value x
 # output: probability of hit (H) and false-alarm (FA) given x
@@ -108,12 +153,14 @@ if __name__ == "__main__":
     DATASIZE = 10 
 
     user_models = {}
+    regression_models = {}
 
     #files = ['input/a_rating_data.in', 'input/d_rating_data.in', 'input/h_rating_data.in']
     files = [ 'input/d_confidence_rating_data.in', 'input/h_confidence_rating_data.in']
     for input_file in files:        
         print("\nprocessing...................................................", input_file)
-        
+        avg_ratings = d_avg_ratings if input_file[6] == "d" else hoh_avg_ratings
+
         function_list = {}
         with open(input_file) as f:
             """#######################################################
@@ -158,79 +205,39 @@ if __name__ == "__main__":
                 p_h, p_m, p_fa, p_cr = hit/(hit+miss), miss/(hit+miss), false_alarm/(false_alarm+correct_rejection), correct_rejection/(false_alarm+correct_rejection)
                 
                 pv_name = int(v_name.split(":")[0][1:]) #parse_v_name(v_name)
+                
                 if sdt_obj.dprime() > 0:
                     function_list[pv_name] = sdt_obj
-                    #print(pv_name, "p(H)=" + str(p_h) + "\td'=" + str(sdt_obj.dprime()), "\tc=" + str(sdt_obj.c()))                    
-                #else:
-                    #print(v_name, "p(H)=" + str(p_h))
+                    print(pv_name, "p(H)=" + str(p_h) + "\td'=" + str(sdt_obj.dprime()), "\tc=" + str(sdt_obj.c()))                    
+                # else:
+                #     print(v_name, "p(H)=" + str(p_h))
         
         """--- file closed at this point ---"""
+        reg_function_list = {}
         for key in function_list:
-            print(key, function_list[key])
+            reg_function_list = get_regression_model(function_list, key, reg_function_list, avg_ratings)        
 
-            sdt_obj = function_list[key]
-            # generate
-            noi_d = stats.norm(loc=0, scale=1)
-            sig_d = stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
-
-            # estimated rates
-            epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss
-            epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_correctrejection
-            eph = 1-epm # sig_d.sf(sdt_obj.c()) # estimated_probability_of_hit
-            epfa = 1-epcr # noi_d.sf(sdt_obj.c()) #estimated_probability_of_falsealarm
-            ####################################################################
-            # let's find a function that can predict ratings from hit rates.
-            #######################
-            ptset_ph, ptset_y = [0, 1], [5, 0]
-            # each point has a tuple (p(H), Rating).
-            avg_ratings = d_avg_ratings if input_file[6] == "d" else hoh_avg_ratings
-
-
-            #print("p(H):{:.3f} p(M):{:.3f} p(FA):{:.3f} => R:{}".format(eph, epm, epfa, avg_ratings[key]))
-            # now, let's add two more points.
-            ptset_ph.append(eph)
-            ptset_y.append(avg_ratings[key][0])
-            ptset_ph.append(epm)
-            ptset_y.append(avg_ratings[key][1])
-            
-            ####################################################### what about p(FA) rates then?
-            # Let's include pfa
-            ptset_pfa = [epfa, epfa, epfa, epfa] # to match the number of points we have
-            # now this becomes a multivariate regression model    
-            #X is the independent variable (bivariate in this case)
-            X = []
-            for i in range(len(ptset_ph)):
-                X.append([ptset_ph[i], ptset_pfa[i]])
-
-            polynom_feat = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
-            X_ = polynom_feat.fit_transform(X) #transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
-            #print(X_)
-
-            reg = linear_model.LinearRegression() # generate the regression object
-            #preform the actual regression
-            reg.fit(X_, ptset_y) # ptset_y is the dependent data
-            
-            # now we have a fitted regression function.
-            # let's try to predict... [p(H), p(FA)] -> R
-            X_test = [
-                #[0.6, 0.48], 
-                #[0.1, 0.48],
-                [0, epfa],
-                [1, epfa]
-            ]
-            X_test_ = polynom_feat.fit_transform(X_test)
-
+        ############### now we have a fitted regression function.
+        # let's try to predict... [p(H), p(FA)] -> R
+        X_test = [
+            #[0.6, 0.48], 
+            #[0.1, 0.48],
+            [0, 0.48],
+            [1, 0.48]
+        ]
+        polynom_feat = PolynomialFeatures(degree=2)
+        X_test_ = polynom_feat.fit_transform(X_test)
+        for key in reg_function_list:
+            #print(key, reg_function_list[key])
             # regression coefficients 
             #print('Coefficients: \n', reg.coef_) 
             #print("X = \n", X_test_)
-            
             Y_test = reg.predict(X_test_)
-            
             for i in range(len(Y_test)):
                 print("P(H): {:.2f} ====> Predicted quality rating: {:.3f}\n".format(X_test[0][i], Y_test[i]))
-            
-            
-        user_models[input_file[6:7]] = function_list # per each hearing group
+                
+        # user_models[input_file[6:7]] = function_list # per each hearing group
+        # regression_models[input_file[6:7]] = reg_function_list
  
 
 
