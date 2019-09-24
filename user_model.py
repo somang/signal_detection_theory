@@ -232,6 +232,7 @@ if __name__ == "__main__":
             # regression coefficients 
             #print('Coefficients: \n', reg.coef_) 
             #print("X = \n", X_test_)
+            reg = reg_function_list[key]
             Y_test = reg.predict(X_test_)
             for i in range(len(Y_test)):
                 print("P(H): {:.2f} ====> Predicted quality rating: {:.3f}\n".format(X_test[0][i], Y_test[i]))
@@ -244,66 +245,18 @@ if __name__ == "__main__":
 
 
 
-"""
-    Input: Delay, Speed, Number of Missing words, Words frequency, Paraphrasing
+    """
+        Input: Delay, Speed, Number of Missing words, Words frequency, Paraphrasing
 
-    Output: Probability of hit, Quality rating
-    1. Use functions to generate regression function. What does it take as an input?
-    2. Get mapping between standard scores to raw values
-    3. Then, raw values will be taken as input, to return quality ratings.
-
-
-    Ranges?
-        Delay: 0 sec -> 10 sec?
-        Speed: 0 WPM -> 160 -> 300 WPM (freq analysis)?
-        # mw : freq analysis
-        Paraphrase: boolean
-"""
-#DATASIZE = 10
-
-# delay, wpm, number of errors, paraphrasing
-### normal distribution using the mean and sd from existing data.
-# trn = get_truncated_normal(mean=4895.75, sd=1477.94, low=0, high=12000) # from 0 milliseconds to 12000 (12 seconds)
-# r_delay = trn.rvs(DATASIZE)
-
-# #for i in range(DATASIZE):
-# mw = np.rint(trn.rvs())
-# r_missing_words.append(mw)
-
-# # generate paraphrasing factor:
-# pf_factors = []
-# pf = 0
-# for i in range(DATASIZE):
-# if r_sentence_sim[i] < 1.0:
-#     if r_missing_words[i] > 0:
-#     # when there are missing words, 
-#     # then it means there has been paraphrasing
-#     pf = 1
-# pf_factors.append(pf)
-# pf = 0
-# pf_factors = np.asarray(pf_factors)
-
-# c = np.column_stack((r_delay, r_wpm))
-# c = np.column_stack((c, r_spell_grammar_errors))
-# c = np.column_stack((c, r_missing_words))
-# c = np.column_stack((c, r_sentence_sim))
-# c = np.column_stack((c, pf_factors))
-
-# np.random.shuffle(c) # shuffle the order in rows
+        Output: Probability of hit, Quality rating
+        1. Use functions to generate regression function. What does it take as an input?
+        2. Get mapping between standard scores to raw values
+        3. Then, raw values will be taken as input, to return quality ratings.
 
 
-
-######################### then, now we have four points ready to be fitted...
-### first, one variable and linear polynomial regression (degree of 2)
-# ptset_x = ptset_ph
-# coefs = poly.polyfit(ptset_x, ptset_y, 2) # Fit with polyfit
-# print(coefs)
-# f = np.poly1d(coefs)
-# print(f)
-# x_new = np.linspace(0, 1, 100)
-# predicted_ratings = poly.polyval(x_new, coefs)
-# plt.plot(x_new, predicted_ratings)
-# plt.scatter(ptset_x, ptset_y, marker='.', color="red")
-# plt.ylabel('predicted_ratings')
-# plt.xlabel('hit_rates')
-# plt.show()
+        Ranges?
+            Delay: 0 sec -> 10 sec?
+            Speed: 0 WPM -> 160 -> 300 WPM (freq analysis)?
+            # mw : freq analysis
+            Paraphrase: boolean
+    """
