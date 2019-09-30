@@ -49,9 +49,6 @@ def handle_satlvl(var_sat, x):
     return x * var_sat[x]
 
 
-
-
-
 filename = "q1q4_results.xlsx"
 xl = pandas.ExcelFile(filename)
 

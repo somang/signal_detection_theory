@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 from random import randint
 from random import gauss
 
-
 def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
     if p:
         x = np.linspace(0, 1, 100)
@@ -81,13 +80,11 @@ def parse_v_name(vname):
     
     
 def get_regression_model(function_list, key, reg_function_list, avg_ratings):
-    print(key, function_list[key])
-
+    #print(key, function_list[key])
     sdt_obj = function_list[key]
     # generate normal curves
     noi_d = stats.norm(loc=0, scale=1)
     sig_d = stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
-
     # estimated rates
     epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss
     epcr = noi_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_correctrejection
@@ -95,17 +92,14 @@ def get_regression_model(function_list, key, reg_function_list, avg_ratings):
     epfa = 1-epcr # noi_d.sf(sdt_obj.c()) #estimated_probability_of_falsealarm
     ####################################################################
     # let's find a function that can predict ratings from hit rates.
-    #######################
     ptset_ph, ptset_y = [0, 1], [5, 0]
     # each point has a tuple (p(H), Rating).
-
     print("p(H):{:.3f} p(M):{:.3f} p(FA):{:.3f} => R:{}".format(eph, epm, epfa, avg_ratings[key]))
     # now, let's add two more points.
     ptset_ph.append(eph)
     ptset_y.append(avg_ratings[key][0])
     ptset_ph.append(epm)
     ptset_y.append(avg_ratings[key][1])
-    
     ####################################################### what about p(FA) rates then?
     # Let's include pfa
     ptset_pfa = [epfa, epfa, epfa, epfa] # to match the number of points we have
@@ -114,24 +108,17 @@ def get_regression_model(function_list, key, reg_function_list, avg_ratings):
     X = []
     for i in range(len(ptset_ph)):
         X.append([ptset_ph[i], ptset_pfa[i]])
-
     polynom_feat = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
     X_ = polynom_feat.fit_transform(X) #transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
-    #print(X_)
+    
+    # for i in range(len(X)):
+    #     print(i, X[i], ptset_y[i])
     reg = linear_model.LinearRegression() # generate the regression object
     #preform the actual regression
     reg.fit(X_, ptset_y) # ptset_y is the dependent data
     reg_function_list[key] = reg # add the regression model to the list.
         
     return reg_function_list
-
-# What do I need?
-# input: factor variable value x
-# output: probability of hit (H) and false-alarm (FA) given x
-
-# what to do?
-# convert x (ms, wpm, mw) to a z-score for the given 'signal' type.
-# then get the c value probabilities p(H) and p(FA)
 
 if __name__ == "__main__":
     #files = ['input/a_rating_data.in', 'input/d_rating_data.in', 'input/h_rating_data.in']
@@ -161,7 +148,7 @@ if __name__ == "__main__":
         print("\nprocessing...................................................", input_file)
         avg_ratings = d_avg_ratings if input_file[6] == "d" else hoh_avg_ratings
 
-        function_list = {}
+        function_list = {} # where all SDT functions gets stored.
         with open(input_file) as f:
             """#######################################################
             ## GET FALSE-ALARM RATE FIRST, TO COMPARE WITH THE REST ##
@@ -187,7 +174,6 @@ if __name__ == "__main__":
                 
                 sdt_obj = SDT(HI=hit, MI=miss, CR=correct_rejection, FA=false_alarm)
                 
-                
                 # Now lets create a list with the rates of hit and false alarm
                 for i in range(1, len(hit_list[1:])):
                     hit_list[i] = hit_list[i] / (hit + miss)
@@ -195,56 +181,66 @@ if __name__ == "__main__":
                 tpr, fpr = hit_list[1:], fa_list[1:]
                 tpr_cum, fpr_cum = get_cumul_z(tpr), get_cumul_z(fpr)
 
-                coefs = poly.polyfit(fpr, tpr, 2) # Polynomial fitting line, this can be used instead of the default line.
-                #print(v_name, coefs)
+                coefs = poly.polyfit(fpr, tpr, 2) # Polynomial fitting line, this can be used instead of the default line.                
                 x = np.linspace(0, 1, 10)
                 ffit = poly.polyval(x, coefs)
-                #print(ffit)
+                #print(v_name, coefs, ffit)
 
                 #To create a frozen distribution:
                 p_h, p_m, p_fa, p_cr = hit/(hit+miss), miss/(hit+miss), false_alarm/(false_alarm+correct_rejection), correct_rejection/(false_alarm+correct_rejection)
-                
                 pv_name = int(v_name.split(":")[0][1:]) #parse_v_name(v_name)
                 
                 if sdt_obj.dprime() > 0:
                     function_list[pv_name] = sdt_obj
-                    print(pv_name, "p(H)=" + str(p_h) + "\td'=" + str(sdt_obj.dprime()), "\tc=" + str(sdt_obj.c()))                    
+                    #print(pv_name, "p(H)=" + str(p_h) + "\td'=" + str(sdt_obj.dprime()), "\tc=" + str(sdt_obj.c()))                    
                 # else:
                 #     print(v_name, "p(H)=" + str(p_h))
         
         """--- file closed at this point ---"""
-        reg_function_list = {}
+        reg_function_list = {} # all regression models were stored here.
         for key in function_list:
             reg_function_list = get_regression_model(function_list, key, reg_function_list, avg_ratings)        
 
-        ############### now we have a fitted regression function.
-        # let's try to predict... [p(H), p(FA)] -> R
+        # now, let's put them into global dictionary (array)                
+        user_models[input_file[6:7]] = function_list # per each hearing group
+        regression_models[input_file[6:7]] = reg_function_list
+ 
+    ### OUT OF THE LOOP ###
+
+    ############### now we have a fitted regression function.
+    # let's try to predict... [p(H), p(FA)] -> R
+    for h in regression_models: # for each hearing group
+        print("------------", h, "------------")
+        pfa = 0.48 if h == "d" else 0.296
         X_test = [
-            #[0.6, 0.48], 
-            #[0.1, 0.48],
-            [0, 0.48],
-            [1, 0.48]
+            [0, pfa], [0.25, pfa], [0.5, pfa], [0.75, pfa], [1, pfa]
         ]
-        polynom_feat = PolynomialFeatures(degree=2)
-        X_test_ = polynom_feat.fit_transform(X_test)
-        for key in reg_function_list:
-            #print(key, reg_function_list[key])
+        reg_f_list = regression_models[h]
+        for variation in reg_f_list: # for each reg function stored in f_list
+            polynom_feat = PolynomialFeatures(degree=2)
+            X_test_ = polynom_feat.fit_transform(X_test)
+            reg = reg_f_list[variation]
             # regression coefficients 
             #print('Coefficients: \n', reg.coef_) 
-            #print("X = \n", X_test_)
-            reg = reg_function_list[key]
+            #print("X = \n", X_test_)                
             Y_test = reg.predict(X_test_)
+            print("variation: {}".format(variation))
             for i in range(len(Y_test)):
-                print("P(H): {:.2f} ====> Predicted quality rating: {:.3f}\n".format(X_test[0][i], Y_test[i]))
-                
-        # user_models[input_file[6:7]] = function_list # per each hearing group
-        # regression_models[input_file[6:7]] = reg_function_list
- 
+                print("P(H): {:.2f} ====> Predicted quality rating: {:.3f}".format(X_test[i][0], Y_test[i]))
+            print('\n')
 
 
 
 
 
+
+# What do I need?
+# input: factor variable value x
+# output: probability of hit (H) and false-alarm (FA) given x
+
+# what to do?
+# convert x (ms, wpm, mw) to a z-score for the given 'signal' type.
+# then get the c value probabilities p(H) and p(FA)
     """
         Input: Delay, Speed, Number of Missing words, Words frequency, Paraphrasing
 
@@ -260,3 +256,8 @@ if __name__ == "__main__":
             # mw : freq analysis
             Paraphrase: boolean
     """
+
+
+    # delay, speed, number of missing words, (nothing=0, high-frequency=1, low-frequency=2), (verbatim=0, paraphrased=1)
+    # let's generate a random input
+    
