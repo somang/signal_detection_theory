@@ -7,7 +7,7 @@ class Line(object):
         self.first, self.second = data
         self.s = self.slope()
         self.y_inter = self.yintercept(self.s)
-        print(self.s, self.y_inter)
+        #print(self.s, self.y_inter)
 
     def slope(self):
         '''Get the slope of a line segment'''

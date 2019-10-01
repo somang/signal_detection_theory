@@ -139,7 +139,6 @@ class Usermodels(object):
                     p_h, p_m, p_fa, p_cr = hit/(hit+miss), miss/(hit+miss), false_alarm/(false_alarm+correct_rejection), correct_rejection/(false_alarm+correct_rejection)
                     pv_name = int(v_name.split(":")[0][1:]) #parse_v_name(v_name)
                     
-
                     if sdt_obj.dprime() > 0:
                         function_list[pv_name] = sdt_obj
                         #print(pv_name, "p(H)=" + str(p_h) + "\td'=" + str(sdt_obj.dprime()), "\tc=" + str(sdt_obj.c()))                    
@@ -221,16 +220,12 @@ class Usermodels(object):
         reg_function_list[key] = reg # add the regression model to the list.        
         return reg_function_list
 
-
-
-
-    def plot_roc_curve(fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
+    def plot_roc_curve(self, fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 
         if p:
             x = np.linspace(0, 1, 100)
             coefs = poly.polyfit(fpr, tpr, 2) # Polynomial fitting line, this can be used instead of the default line.
             ffit = poly.polyval(x, coefs)
             ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
-        
         
         ax.plot(fpr, tpr, label='ROC', marker='.', linewidth=2,  markersize=10) #, linestyle="None")    
         ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0", linewidth=2,  markersize=10) # guide line
@@ -271,9 +266,6 @@ def parse_v_name(vname):
     }
     print(v, variations[v])
     return v
-    
-
-
 
     # delay, speed, number of missing words, (nothing=0, high-frequency=1, low-frequency=2), (verbatim=0, paraphrased=1)
     # let's generate a random input
