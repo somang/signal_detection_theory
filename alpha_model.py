@@ -5,8 +5,15 @@ import random
 from random import randint
 from random import gauss
 
+from scipy import stats
+from scipy.stats import norm
+from scipy.optimize import curve_fit
 from scipy.stats import truncnorm
 import math
+from sklearn.preprocessing import PolynomialFeatures
+
+from line import Line
+from user_model import Usermodels
 
 SCALE = 5
 DATASIZE = 10
@@ -16,7 +23,20 @@ print("SCALE:",SCALE,", SIZE:",DATASIZE)
 def get_truncated_normal(mean=0, sd=0, low=0, high=10):
   value = truncnorm((low - mean) / sd, (high - mean) / sd, loc=mean, scale=sd)
   return value
-  
+
+def get_probabilities(dprime, c):
+    # generate normal curves
+    noi_d = stats.norm(loc=0, scale=1)
+    sig_d = stats.norm(loc=dprime, scale=1) # where loc is the mean and scale is the std dev
+    # estimated rates
+    epm = sig_d.cdf(dprime/2 + c)           # estimated p(m)
+    epcr = noi_d.cdf(dprime/2 + c)          # estimated p(cr)
+    eph = 1-epm # similar to sig_d.sf(c)    # estimated p(h)
+    epfa = 1-epcr # similar to noi_d.sf(c)  # estimated p(fa)
+
+
+    return (eph, epfa)
+
 if __name__ == "__main__":
     # delay, wpm, similarity, number of errors
     ### normal distribution using the mean and sd from existing data.
@@ -61,14 +81,51 @@ if __name__ == "__main__":
     #mw_trn = get_truncated_normal(mean=4.26, sd=2.32, low=0.0, high=10)
 
     # [delay quality rating], [speed quality rating], [missing words quality rating], [paraphrasing quality rating]
+    um, rm = Usermodels().get()
+    
     for i in c:
         delay_score, speed_score, verbatim_score, sge_score, missing_words_score = 0,0,0,0,0
         delay, wpm, mw, pf = i[0], i[1], i[2], i[3]
         
-        print(delay, wpm, mw, pf)
+        #print(delay, wpm, mw, pf)
         # now that we have generated random values.
         # we should now predict quality ratings, which can be processed from p(H) and p(FA)
         
+        # Variable user_models will have a "SDT object" and a "quality regression model"
+
+    # 1. Delay
+    # Delay did not have a positive sensitivity for both hearing groups, however, we may start from p(H) of both delays.
+    # Let's find p(H) for 3 sec (variation 1) and 6 sec delay (variation 2)
+    v1_um = um['d'][1]
+    v2_um = um['d'][2]
+    print(v1_um.dprime(), v1_um.c())
+    print(v2_um.dprime(), v2_um.c())
+
+    l = Line( ((6000, v2_um.c()) , (0, 0)) )
+
+    testing_raw_delay = [0, 3000, 6000, 9000, 12000, 120000] # 0, 3, 6, 9, 12, 120 sec...
+    for i in testing_raw_delay:
+        eph, epfa = get_probabilities(v2_um.dprime(), l.solve(i))
+        X_test = [ [eph, epfa] ]
+        regression = rm['d'][2]
+        polynom_feat = PolynomialFeatures(degree=2)
+        X_test_ = polynom_feat.fit_transform(X_test)
+        Y_test = regression.predict(X_test_)
+        print(i, l.solve(i), eph, Y_test)
+
+    # trn = get_truncated_normal(mean=4895.75, sd=1477.94, low=0, high=12000)
+
+    # 2. Speed
+
+
+
+    # 3. Missing Words
+
+
+    # 4. Paraphrasing
+
+
+
 
 
     # # verbatim_score: mean=4.20, sd=2.51

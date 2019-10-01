@@ -83,7 +83,8 @@ def get_cumul_z(rate):
 
 if __name__ == "__main__":
     ########################################################################################################################
-    files = ['input/a_rating_data.in', 'input/d_rating_data.in', 'input/h_rating_data.in']
+    #files = ['input/a_rating_data.in', 'input/d_rating_data.in', 'input/h_rating_data.in']
+    files = [ 'input/d_confidence_rating_data.in', 'input/h_confidence_rating_data.in']
     for input_file in files:
         print("processing.....................................", input_file)
         with open(input_file) as f:

@@ -175,11 +175,9 @@ for g in groups:
                 vp[v][5] += 1
     viewing_pleasure[g] = vp
 
-
-
-#g = "deaf" 
-g = "deaf"
-#g = "hoh_deafened"
+#g = "deaf"
+g = "hoh_deafened"
+print("---", g, "---")
 cs = groups[g][2]
 yn = groups[g][0]
 yn_cr = groups[g][1]
@@ -204,7 +202,8 @@ for v in range(1, 23):
     elif g == "hoh_deafened":
         pos_d_variations = [1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21]
 
-    if v in pos_d_variations:
+    #if v in pos_d_variations:
+    if v in range(1,23):
         avgr_hits = numpy.mean(rating['y'][v])
         avgr_miss = numpy.mean(rating['n'][v])
         print("variation {}: ({:.3f}, {:.3f})".format(v, avgr_hits, avgr_miss))

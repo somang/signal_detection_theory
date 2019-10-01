@@ -68,18 +68,7 @@ for v in range(2, 23):
     # generate
     noi_d = scipy.stats.norm(loc=0, scale=1)
     sig_d = scipy.stats.norm(loc=sdt_obj.dprime(), scale=1) #where loc is the mean and scale is the std dev
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+      
     
     # estimated rates
     epm = sig_d.cdf(sdt_obj.dprime()/2 + sdt_obj.c()) # estimated_probability_of_miss

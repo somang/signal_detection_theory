@@ -174,26 +174,26 @@ for sn in xl.sheet_names:
 # is data normal?
 #check_shapiro(yns, confs, ratings)
 #check_shapiro(d_yns, d_confs, d_ratings)
-#check_shapiro(hoh_yns, hoh_confs, hoh_ratings)
-print("OVERALL- Y/N+Confidence VS. Quality")
-print_kendall_and_spearman(yns, confs, ratings)
-print("DEAF- Y/N+Confidence VS. Quality")
-print_kendall_and_spearman(d_yns, d_confs, d_ratings)
-print("\nHOH- Y/N+Confidence VS. Quality")
-print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_ratings)
+# #check_shapiro(hoh_yns, hoh_confs, hoh_ratings)
+# print("OVERALL- Y/N+Confidence VS. Quality")
+# print_kendall_and_spearman(yns, confs, ratings)
+# print("DEAF- Y/N+Confidence VS. Quality")
+# print_kendall_and_spearman(d_yns, d_confs, d_ratings)
+# print("\nHOH- Y/N+Confidence VS. Quality")
+# print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_ratings)
 
-#print("y/n * confidence  VS visual pleasure ratings")
-# is data normal?
-# check_shapiro(yns, confs, vpr)
-# check_shapiro(d_yns, d_confs, d_vpr)
-# check_shapiro(hoh_yns, hoh_confs, hoh_vpr)
+# #print("y/n * confidence  VS visual pleasure ratings")
+# # is data normal?
+# # check_shapiro(yns, confs, vpr)
+# # check_shapiro(d_yns, d_confs, d_vpr)
+# # check_shapiro(hoh_yns, hoh_confs, hoh_vpr)
 
-print("OVERALL- Y/N+Confidence VS. Quality")
-print_kendall_and_spearman(yns, confs, vpr)
-print("\n\nDEAF- Y/N+Confidence VS. VISUAL PLEASURE")
-print_kendall_and_spearman(d_yns, d_confs, d_vpr)
-print("\nHOH- Y/N+Confidence VS. VISUAL PLEASURE")
-print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_vpr)
+# print("OVERALL- Y/N+Confidence VS. Quality")
+# print_kendall_and_spearman(yns, confs, vpr)
+# print("\n\nDEAF- Y/N+Confidence VS. VISUAL PLEASURE")
+# print_kendall_and_spearman(d_yns, d_confs, d_vpr)
+# print("\nHOH- Y/N+Confidence VS. VISUAL PLEASURE")
+# print_kendall_and_spearman(hoh_yns, hoh_confs, hoh_vpr)
 
 
 rating = {'y':{}, 'n':{}}
