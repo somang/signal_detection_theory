@@ -34,6 +34,12 @@ def get_probabilities(dprime, c):
     eph = 1-epm # similar to sig_d.sf(c)    # estimated p(h)
     epfa = 1-epcr # similar to noi_d.sf(c)  # estimated p(fa)
 
+    if c < 0: # if dprime is negative
+        eph = eph * -1
+        if eph < 0:
+            eph = 0
+        elif eph > 1:
+            eph = 1
 
     return (eph, epfa)
 
@@ -101,18 +107,34 @@ if __name__ == "__main__":
     print(v1_um.dprime(), v1_um.c())
     print(v2_um.dprime(), v2_um.c())
 
-    l = Line( ((6000, v2_um.c()) , (0, 0)) )
 
-    testing_raw_delay = [0, 3000, 6000, 9000, 12000, 120000] # 0, 3, 6, 9, 12, 120 sec...
+    # let's try drawing the regression function first,
+    regression = rm['d'][2]
+    X = np.linspace(0, 1, 100)
+    _X = []
+    for i in X:
+        _X.append([i, 0.48])
+    polynom_feat = PolynomialFeatures(degree=2)
+    _X = polynom_feat.fit_transform(_X)
+    _Y = regression.predict(_X)
+    plt.plot(X, _Y, color='blue')
+    
+    l = Line( ((6000, v2_um.c()) , (0, v2_um.c()-v2_um.dprime())) )
+
+    testing_raw_delay = [0, 3000, 6000, 9000, 12000] # 0, 3, 6, 9, 12, 120 sec...
     for i in testing_raw_delay:
         eph, epfa = get_probabilities(v2_um.dprime(), l.solve(i))
         X_test = [ [eph, epfa] ]
-        regression = rm['d'][2]
+        #print(regression.coef_)
         polynom_feat = PolynomialFeatures(degree=2)
-        X_test_ = polynom_feat.fit_transform(X_test)
-        Y_test = regression.predict(X_test_)
-        print(i, l.solve(i), eph, Y_test)
+        X_test = polynom_feat.fit_transform(X_test)
+        Y_test = regression.predict(X_test)
+        print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}".format(i, l.solve(i), eph, Y_test))
 
+        plt.scatter(eph, Y_test)
+
+    plt.show()
+    
     # trn = get_truncated_normal(mean=4895.75, sd=1477.94, low=0, high=12000)
 
     # 2. Speed

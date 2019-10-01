@@ -231,6 +231,7 @@ class Usermodels(object):
             ffit = poly.polyval(x, coefs)
             ax.plot(x, ffit, label='polyfit') # polyfit - fitting line with the dots.
         
+        
         ax.plot(fpr, tpr, label='ROC', marker='.', linewidth=2,  markersize=10) #, linestyle="None")    
         ax.plot([0, 1], [0, 1], linestyle='--', label="d'=0", linewidth=2,  markersize=10) # guide line
         ax.set_xlabel('False-Alarm Rate', fontsize=12)
