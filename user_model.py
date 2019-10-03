@@ -185,7 +185,7 @@ class Usermodels(object):
         epfa = 1-epcr
         ####################################################################
         # let's find a function that can predict ratings from hit rates.
-        ptset_ph, ptset_y = [0, 1], [1, 5]
+        ptset_ph, ptset_y = [1, 0], [1, 5]
         #ptset_ph, ptset_y = [], []
         # each point has a tuple (p(H), Rating).
 
@@ -209,7 +209,7 @@ class Usermodels(object):
         for i in range(len(ptset_ph)):
             X.append([ptset_ph[i], ptset_pfa[i]])
         polynom_feat = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
-        X_ = polynom_feat.fit_transform(X) #transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
+        X_ = polynom_feat.fit_transform(X) # transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
         
         # Preform the actual regression
         reg = linear_model.LinearRegression() # generate the regression object

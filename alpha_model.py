@@ -125,13 +125,18 @@ if __name__ == "__main__":
     l = Line( ((6000, v2_um.c()) , (0, v2_um.c()-v2_um.dprime())) )
 
     testing_raw_delay = [0, 3000, 6000, 9000, 12000] # 0, 3, 6, 9, 12 sec...
-    for i in testing_raw_delay:
-        eph, epfa = get_probabilities(v2_um.dprime(), l.solve(i))
+    for delay in testing_raw_delay:
+        eph, epfa = get_probabilities(v2_um.dprime(), l.solve(delay))
         X_test = [ [eph, epfa] ]
         #print(regression.coef_)
         polynom_feat = PolynomialFeatures(degree=2)
         X_test = polynom_feat.fit_transform(X_test)
-        Y_test = regression.predict(X_test)
+        if delay > 6000:
+            Y_test = 1
+        elif delay < 300: # minimum bound?
+            Y_test = 5
+        else:
+            Y_test = regression.predict(X_test)
         print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(i, l.solve(i), eph, Y_test))
 
         plt.scatter(eph, Y_test)
