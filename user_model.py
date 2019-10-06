@@ -26,7 +26,6 @@ import re
 
 import csv
 import numpy as np
-import matplotlib.pyplot as plt
 
 from random import randint
 from random import gauss
@@ -185,7 +184,11 @@ class Usermodels(object):
         epfa = 1-epcr
         ####################################################################
         # let's find a function that can predict ratings from hit rates.
-        ptset_ph, ptset_y = [1, 0], [1, 5]
+        poly_fit_switch = 0
+        if poly_fit_switch == 1:                    # if not using regression model...
+            ptset_ph, ptset_y = [0, 1], [5, 1] 
+        else:                                       # else, it is the multivariate reg model...
+            ptset_ph, ptset_y = [1, 0], [1, 5] 
         #ptset_ph, ptset_y = [], []
         # each point has a tuple (p(H), Rating).
 
@@ -203,21 +206,29 @@ class Usermodels(object):
         ptset_pfa = [] # Let's include pfa
         for i in range(len(ptset_ph)):  # to match the number of points we have
             ptset_pfa.append(epfa)
-
-        #  now this becomes a multivariate regression model    
+        
+        # Option #1 = Preform the actual regression, becomes a multivariate regression model    
         X = [] # X is the independent variable (bivariate in this case)
         for i in range(len(ptset_ph)):
             X.append([ptset_ph[i], ptset_pfa[i]])
         polynom_feat = PolynomialFeatures(degree=2)        #generate a model of polynomial features        
         X_ = polynom_feat.fit_transform(X) # transform the x data for proper fitting (for single variable type it returns, [1, x, x**2])
-        
-        # Preform the actual regression
         reg = linear_model.LinearRegression() # generate the regression object
         reg.fit(X_, ptset_y) # ptset_y is the dependent data
+        
+        # Option #2 = poly fitting...best fit (in a least-squares)
+        #print("v{}: p(H):{}, rating:{}".format(key, ptset_ph, ptset_y))
+        #polyfit_f = poly.polyfit(ptset_ph, ptset_y, 2) # Polynomial fitting line, this can be used instead of the default line.        
+        
+        # x = np.linspace(0, 1, 100)
+        # ffit = poly.polyval(x, reg)
+        # plt.plot(x, ffit) 
+        # plt.show()
         
         #self.viz_polymonial(reg, polynom_feat, epfa)
 
         reg_function_list[key] = reg # add the regression model to the list.        
+        #reg_function_list[key][2] = polyfit_f # add the regression model to the list.        
         return reg_function_list
 
     def plot_roc_curve(self, fpr, tpr, var, ax, p=False): # takes false-positive rate, true-positive rate 

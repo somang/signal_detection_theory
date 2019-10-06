@@ -3,11 +3,13 @@
 
 class Line(object):
 
-    def __init__(self, data):
-        self.first, self.second = data
+    def __init__(self, p1, p2):
+        self.first, self.second = p1, p2
         self.s = self.slope()
         self.y_inter = self.yintercept(self.s)
-        #print(self.s, self.y_inter)
+
+    def __str__(self):
+        return "p1:" + str(self.first) + ", p2:" + str(self.second)
 
     def slope(self):
         '''Get the slope of a line segment'''
