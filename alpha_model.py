@@ -109,14 +109,13 @@ def get_delay_rating(group, reg_function, user_model, zscore_val, delay):
         rating = 1
     elif rating > 5:
         rating = 5
-    #print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(delay, zscore_val, eph, rating))
+    print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(delay, zscore_val, eph, rating))
 
     return rating
     
 def get_speed_rating(group, reg_function, user_model, zscore_val, speed):
     rating = 0
     # let's fix axis for v4 only. next would be to split into slow and fast signals
-    print(speed, user_model.dprime(), zscore_val)
     
     #regression_mode = 1 if user_model.dprime() > 1 else 0
     regression_mode = 0 # because it doesn't make sense with v4 only to define the rating algorithm.
@@ -167,7 +166,7 @@ def get_mw_rating(group, reg_function, user_model, zscore_val, mw_count):
         else:
             rating = reg_function.predict(X_test)    
 
-    else: # manual fitting, polynomial on raw values...        
+    else: # manual fitting, polynomial on raw values...
         polyfit_x = [0, 1, 5, 10]
         if group == 'd':        # choices(values, probabilities_of_the_values_occur) of that choice
             v5_rating = choices([1.750, 3.529], [0.320, 0.680])[0]
@@ -190,9 +189,32 @@ def get_mw_rating(group, reg_function, user_model, zscore_val, mw_count):
         rating = 1
     elif rating > 5:
         rating = 5
-    #print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(mw_count, zscore_val, eph, rating))
+    print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(mw_count, zscore_val, eph, rating))
 
     return rating
+
+def get_paraphrasing_rating(group, reg_function, user_model, zscore_val, pf_value):
+    rating = 0
+    eph, epfa = get_probabilities(user_model.dprime(), zscore_val)
+    polyfit_x = [0, 1]
+    if group == 'd':        # choices(values, probabilities_of_the_values_occur) of that choice
+        v9_rating = choices([1.769, 3.833], [0.520, 0.480])[0]
+    else: # group == 'h'
+        v9_rating = choices([2.222, 3.833], [0.333, 0.667])[0]
+        
+    polyfit_y = [5, v9_rating] # because v6:5HF has positive sensitivity in both groups...
+    rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
+    rating = poly.polyval(pf_value, rating_reg)
+
+    if rating < 1:
+        rating = 1
+    elif rating > 5:
+        rating = 5
+    
+    print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(pf_value, zscore_val, eph, rating))
+    
+    return rating
+
 
 
 if __name__ == "__main__":
@@ -260,26 +282,21 @@ if __name__ == "__main__":
     test_missingwords = [0, 1, 2, 4, 5, 10, 20, 50]
     for missingword_count in test_missingwords:
         get_mw_rating(hearing_group, v6_rm, v6_um, map_function.solve(missingword_count), missingword_count)
-    
-    # trn = get_truncated_normal(mean=4895.75, sd=1477.94, low=0, high=12000)
 
-    # 4. test Paraphrasing
+    ####################################################################################
+    ####################################################################################
+    # 4. Paraphrasing
+    # The paraphrasing factor was defined as 1 or 0
+    # Then, the value will be either 1 or 0, 
+    #
+    v9_um, v9_rm = user_model[hearing_group][9], reg_model[hearing_group][9] # paraphrasing
+    map_function = Line( (0, 0) , (1, v9_um.c()) ) # linear mapping...
+    test_paraphrasing = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    for pf_value in test_paraphrasing:
+        get_paraphrasing_rating(hearing_group, v9_rm, v9_um, map_function.solve(pf_value), pf_value)
 
 
 
-
-
-    # # verbatim_score: mean=4.20, sd=2.51
-    # # Paraphrasing (verbatimness) score which audiences subjectively feel
-    # if sentence_sim == 1.0:
-    #     verbatim_score = 10
-    # elif 0.7 < sentence_sim < 1.0:
-    #     if missing_words == 0:
-    #     verbatim_score = 10
-    #     elif 0 < missing_words <= 15:
-    #     verbatim_score = round(gauss(4.50,0.3))  
-    # else:
-    #     verbatim_score = round(gauss(1.0,0.6))
 
 
     """
