@@ -91,23 +91,19 @@ def get_rating(hearing_group, regression_function, user_model, zscore, factor_va
         else:
             rating = reg_function.predict(X_test)    
     else:                                   # manual fitting, polynomial on raw values...                
-        if group == 'd':
+        if group == 'd': 
             v1_rating = choices([2.250, 3.846], [0.480, 0.520])[0] # values, probabilities of that choice
             v2_rating = choices([1.818, 4.071], [0.440, 0.560])[0]
         else:                               # group == 'h'
             v1_rating = choices([2.500, 3.947], [0.296, 0.704])[0]
             v2_rating = choices([1.714, 3.850], [0.259, 0.741])[0]        
-        polyfit_x = [0, 3000, 6000, 9000]
-        polyfit_y = [5, v1_rating, v2_rating, 1]        
+        
+        polyfit_x, polyfit_y = [0, 3000, 6000, 9000], [5, v1_rating, v2_rating, 1]        
         rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
         rating = poly.polyval(delay, rating_reg)
     
-    rating = 1 if rating < 1 elif rating > 5: 5
-    
-    if rating < 1:
-        rating = 1
-    elif rating > 5:
-        rating = 5
+    rating = 1 if rating < 1 else 5 if rating > 5 else rating
+
     if TEST:
         print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(delay, zscore_val, eph, rating))
     return rating
