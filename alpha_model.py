@@ -21,7 +21,24 @@ from user_model import Usermodels
 SCALE = 5
 DATASIZE = 10
 #print("SCALE:",SCALE,", SIZE:",DATASIZE)
-TEST = 0
+
+def test_rating_functions():
+    print("TESTING.... WITH PREDEFINED VALUES...")
+    test_delay = [0, 3000, 6000, 9000, 12000] # 0, 3, 6, 9, 12 sec...
+    for delay in test_delay:
+        delay_rating = get_delay_rating(hearing_group, v2_rm, v2_um, delay_map_function.solve(delay), delay)
+    
+    test_speed = [0, 45, 90, 120, 160, 190, 200, 230, 260]
+    for speed in test_speed:
+        speed_rating = get_speed_rating(hearing_group, v4_rm, v4_um, speed_map_function.solve(speed), speed)
+    
+    test_missingwords = [0, 1, 2, 4, 5, 10, 20, 50]
+    for missingword_count in test_missingwords:
+        get_mw_rating(hearing_group, v6_rm, v6_um, mw_map_function.solve(missingword_count), missingword_count)
+    
+    test_paraphrasing = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    for pf_value in test_paraphrasing:
+        get_paraphrasing_rating(hearing_group, v9_rm, v9_um, pf_map_function.solve(pf_value), pf_value)
 
 #https://crtc.gc.ca/eng/archive/2012/2012-362.htm
 def get_truncated_normal(mean=0, sd=0, low=0, high=10):
@@ -70,50 +87,18 @@ def get_probabilities(dprime, c):
     eph = 1-epm # similar to sig_d.sf(c)    # estimated p(h)
     epcr = noi_d.cdf(dprime/2 + c)          # estimated p(cr)
     epfa = 1-epcr # similar to noi_d.sf(c)  # estimated p(fa)
-
-    if eph < 0:
-        eph = 0
-    elif eph > 1:
-        eph = 1
-
+    eph = 0 if eph < 0 else 1 if eph > 1 else eph
     return (eph, epfa)
 
-def get_rating(hearing_group, regression_function, user_model, zscore, factor_value, choice_set):
-    rating = 0
-    regression_mode = 1 if user_model.dprime() > 1 else 0
-    eph, epfa = get_probabilities(user_model.dprime(), zscore_val)
-    if regression_mode:
-        X_test = PolynomialFeatures(degree=2).fit_transform([ [eph, epfa] ])        
-        if delay > 6000:
-            rating = 1
-        elif delay < 100: # minimum bound?
-            rating = 5
-        else:
-            rating = reg_function.predict(X_test)    
-    else:                                   # manual fitting, polynomial on raw values...                
-        if group == 'd': 
-            v1_rating = choices([2.250, 3.846], [0.480, 0.520])[0] # values, probabilities of that choice
-            v2_rating = choices([1.818, 4.071], [0.440, 0.560])[0]
-        else:                               # group == 'h'
-            v1_rating = choices([2.500, 3.947], [0.296, 0.704])[0]
-            v2_rating = choices([1.714, 3.850], [0.259, 0.741])[0]        
-        
-        polyfit_x, polyfit_y = [0, 3000, 6000, 9000], [5, v1_rating, v2_rating, 1]        
-        rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
-        rating = poly.polyval(delay, rating_reg)
-    
-    rating = 1 if rating < 1 else 5 if rating > 5 else rating
-
-    if TEST:
-        print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(delay, zscore_val, eph, rating))
-    return rating
+def testprinting(factorvalue, zscore_val, eph, rating):
+    print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(factorvalue, zscore_val, eph, rating))
 
 def get_delay_rating(group, reg_function, user_model, zscore_val, delay):    
     rating = 0
     regression_mode = 1 if user_model.dprime() > 1 else 0
     eph, epfa = get_probabilities(user_model.dprime(), zscore_val)
     if regression_mode:
-        X_test = PolynomialFeatures(degree=2).fit_transform([ [eph, epfa] ])        
+        X_test = PolynomialFeatures(degree=2).fit_transform([ [eph, epfa] ]) 
         if delay > 6000:
             rating = 1
         elif delay < 100: # minimum bound?
@@ -127,21 +112,15 @@ def get_delay_rating(group, reg_function, user_model, zscore_val, delay):
         else:                               # group == 'h'
             v1_rating = choices([2.500, 3.947], [0.296, 0.704])[0]
             v2_rating = choices([1.714, 3.850], [0.259, 0.741])[0]        
-        polyfit_x = [0, 3000, 6000, 9000]
-        polyfit_y = [5, v1_rating, v2_rating, 1]        
+        polyfit_x, polyfit_y = [0, 3000, 6000, 9000], [5, v1_rating, v2_rating, 1]        
         rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
         rating = poly.polyval(delay, rating_reg)
-    if rating < 1:
-        rating = 1
-    elif rating > 5:
-        rating = 5
-    if TEST:
-        print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(delay, zscore_val, eph, rating))
+    rating = 1 if rating < 1 else 5 if rating > 5 else rating
+    #testprinting(delay, zscore_val, eph, rating)
     return rating
     
 def get_speed_rating(group, reg_function, user_model, zscore_val, speed):
     rating = 0 # let's fix axis for v4 only. next would be to split into slow and fast signals
-    
     #regression_mode = 1 if user_model.dprime() > 1 else 0
     regression_mode = 0 # because it doesn't make sense with v4 only to define the rating algorithm.
 
@@ -161,16 +140,11 @@ def get_speed_rating(group, reg_function, user_model, zscore_val, speed):
         else:                       # group == 'h'
             v3_rating = choices([2.250, 4.158], [0.296, 0.704])[0]
             v4_rating = choices([2.900, 3.765], [0.370, 0.630])[0]        
-        polyfit_x = [0, 90, 160, 200, 250]
-        polyfit_y = [1, v3_rating, 5, v4_rating, 1]
+        polyfit_x, polyfit_y = [0, 90, 160, 200, 250], [1, v3_rating, 5, v4_rating, 1]
         rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
         rating = poly.polyval(speed, rating_reg)
-    if rating < 1:
-        rating = 1
-    elif rating > 5:
-        rating = 5
-    if TEST:
-        print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(speed, zscore_val, eph, rating))
+    rating = 1 if rating < 1 else 5 if rating > 5 else rating
+    #testprinting(speed, zscore_val, eph, rating)
     return rating
 
 def get_mw_rating(group, reg_function, user_model, zscore_val, mw_count):    
@@ -183,12 +157,11 @@ def get_mw_rating(group, reg_function, user_model, zscore_val, mw_count):
         X_test = PolynomialFeatures(degree=2).fit_transform([ [eph, epfa] ])        
         if mw_count > 10:
             rating = 1
-        elif mw_count == 0: # minimum bound?
+        elif mw_count == 0:
             rating = 5
         else:
             rating = reg_function.predict(X_test)
     else: # manual fitting, polynomial on raw values...
-        polyfit_x = [0, 1, 5, 10]
         if group == 'd':        # choices(values, probabilities_of_the_values_occur) of that choice
             v5_rating = choices([1.750, 3.529], [0.320, 0.680])[0]
             v6_rating = choices([2.000, 4.083], [0.520, 0.480])[0]
@@ -199,34 +172,24 @@ def get_mw_rating(group, reg_function, user_model, zscore_val, mw_count):
             v6_rating = choices([2.889, 3.944], [0.333, 0.667])[0]
             v7_rating = choices([2.500, 3.913], [0.148, 0.852])[0]
             v8_rating = choices([2.929, 4.000],	[0.519, 0.481])[0]
-        polyfit_y = [5, v5_rating, v6_rating, 1] # because v6:5HF has positive sensitivity in both groups...
+        polyfit_x, polyfit_y = [0, 1, 5, 10], [5, v5_rating, v6_rating, 1] # because v6:5HF has positive sensitivity in both groups...
         rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
         rating = poly.polyval(mw_count, rating_reg)
-    if rating < 1:
-        rating = 1
-    elif rating > 5:
-        rating = 5
-    if TEST:
-        print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(mw_count, zscore_val, eph, rating))
+    rating = 1 if rating < 1 else 5 if rating > 5 else rating
+    #testprinting(mw_count, zscore_val, eph, rating)
     return rating
 
 def get_paraphrasing_rating(group, reg_function, user_model, zscore_val, pf_value):
     rating = 0
     eph, epfa = get_probabilities(user_model.dprime(), zscore_val)
-    polyfit_x = [0, 1]
     if group == 'd':            # choices(values, probabilities_of_the_values_occur) of that choice
         v9_rating = choices([1.769, 3.833], [0.520, 0.480])[0]
     else:                       # group == 'h'
         v9_rating = choices([2.222, 3.833], [0.333, 0.667])[0]        
-    polyfit_y = [5, v9_rating] # because v6:5HF has positive sensitivity in both groups...
+    polyfit_x, polyfit_y = [0, 1], [5, v9_rating] # because v6:5HF has positive sensitivity in both groups...
     rating_reg = poly.polyfit(polyfit_x, polyfit_y, 2)
     rating = poly.polyval(pf_value, rating_reg)
-    if rating < 1:
-        rating = 1
-    elif rating > 5:
-        rating = 5    
-    if TEST:
-        print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(pf_value, zscore_val, eph, rating))    
+    rating = 1 if rating < 1 else 5 if rating > 5 else rating
     return rating
  
 if __name__ == "__main__":
@@ -237,8 +200,8 @@ if __name__ == "__main__":
     # The definition of 'rating system' will be incorperating the user models.
     user_model, reg_model = Usermodels().get()    # Variable user_models will have a "SDT object" and a "quality regression model"
     
-    #hearing_group = 'd'
-    hearing_group = 'h'
+    hearing_group = 'd'
+    #hearing_group = 'h'
     v1 = user_model[hearing_group][1]
     pfa = v1['FA']/int(v1['FA']+v1['CR'])
     
@@ -270,13 +233,12 @@ if __name__ == "__main__":
     # 4. Paraphrasing
     v9_um, v9_rm = user_model[hearing_group][9], reg_model[hearing_group][9] # paraphrasing
     pf_map_function = Line( (0, 0) , (1, v9_um.c()) ) # linear mapping...
-
+    
+    #test_rating_functions() # turn on the printing function if to test these...
 
     # generate rating scores based on the random input.
-    for i in data_cols:
-        delay_score, speed_score, verbatim_score, sge_score, missing_words_score = 0,0,0,0,0
-        delay, speed, missingword_count, pf_value = i[0], i[1], i[2], i[3]
-        
+    for c in data_cols:
+        delay, speed, missingword_count, pf_value = c[0], c[1], c[2], c[3]
         ######### GET RATINGS ####################################################################
         # 1. Delay
         # Delay did not have a positive sensitivity for both hearing groups, however, we may start from p(H) of both delays.
@@ -295,55 +257,24 @@ if __name__ == "__main__":
         # Then, the value will be either 1 or 0, 
         pf_rating = get_paraphrasing_rating(hearing_group, v9_rm, v9_um, pf_map_function.solve(pf_value), pf_value)
 
-        print("delay:\t{}\t-> rating: {}\n".format(delay, delay_rating) + 
-        "speed:\t{}\t-> rating: {}\n".format(speed, speed_rating) + 
-        "# of missing words:\t{}\t-> rating: {}\n".format(missingword_count, mw_rating) +
-        "(0=verbatim, 1=edited):\t{}\t-> rating: {}\n\n".format(pf_value, pf_rating))
+        # print("delay:\t{}\t-> rating: {}\n".format(delay, delay_rating) + 
+        # "speed:\t{}\t-> rating: {}\n".format(speed, speed_rating) + 
+        #  "# of missing words:\t{}\t-> rating: {}\n".format(missingword_count, mw_rating) + 
+        #  "(0=verbatim, 1=edited):\t{}\t-> rating: {}\n\n".format(pf_value, pf_rating))
 
-    if test:
-        test_delay = [0, 3000, 6000, 9000, 12000] # 0, 3, 6, 9, 12 sec...
-        for delay in test_delay:
-            delay_rating = get_delay_rating(hearing_group, v2_rm, v2_um, delay_map_function.solve(delay), delay)
-    
-        test_speed = [0, 45, 90, 120, 160, 190, 200, 230, 260]
-        for speed in test_speed:
-            speed_rating = get_speed_rating(hearing_group, v4_rm, v4_um, speed_map_function.solve(speed), speed)
-    
-        test_missingwords = [0, 1, 2, 4, 5, 10, 20, 50]
-        for missingword_count in test_missingwords:
-            get_mw_rating(hearing_group, v6_rm, v6_um, mw_map_function.solve(missingword_count), missingword_count)
-    
-        test_paraphrasing = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
-        for pf_value in test_paraphrasing:
-            get_paraphrasing_rating(hearing_group, v9_rm, v9_um, pf_map_function.solve(pf_value), pf_value)
+        # now that we have the ratings, let's group the ratings to the columns.
+        # rating_list = [delay_rating, speed_rating, mw_rating, pf_rating]
+        # for r in rating_list:
+            
 
 
-    """
-    print("====== SCORES =====")
-    #print("delay score:", np.mean(c[:,6]), np.std(c[:,6]))
-    #print("speed score:", np.mean(c[:,7]), np.std(c[:,7]))
-    #print("missing words scores:", np.mean(c[:,9]), np.std(c[:,9]))
+        # p = np.asarray(RATING_LIST)
+        # for i in p:
+        #     c = np.column_stack((c, i))
 
-    print("====== Actual Values =====")
-    print("delay:", #min(c[:,0]), max(c[:,0]), 
-        "[4075 4669.5 5775]",
-        #np.mean(c[:,0]), np.std(c[:,0]),
-        np.percentile(c[:,0], [25,50,75]))
-
-    print("speed:", #min(c[:,1]), max(c[:,1]),
-        "[118.56 143.21 313.46]",
-        #np.mean(c[:,1]), np.std(c[:,1]),
-        np.percentile(c[:,1], [25,50,75]))
-    
-    print("missing words:", #min(c[:,3]), max(c[:,3]),
-        "[0.75  1.5  7]",
-        #np.mean(c[:,3]), np.std(c[:,3]),
-        np.percentile(c[:,3], [25,50,75]))
-
-    print(c.shape) # For a matrix with n rows and m columns, shape will be (n,m)
-    filename = str(SCALE) + '_nd_dt_' + str(DATASIZE) + '.csv'
-    with open(filename, 'w') as mf:
-    wr = csv.writer(mf)
-    for i in c:
-        wr.writerow(i)
- """
+    # print(c.shape) # For a matrix with n rows and m columns, shape will be (n,m)
+    # filename = str(SCALE) + '_nd_dt_' + str(DATASIZE) + '.csv'
+    # with open(filename, 'w') as mf:
+    # wr = csv.writer(mf)
+    # for i in c:
+    #     wr.writerow(i)
