@@ -19,7 +19,7 @@ from line import Line
 from user_model import Usermodels
 
 SCALE = 5
-DATASIZE = 10
+DATASIZE = 100000
 #print("SCALE:",SCALE,", SIZE:",DATASIZE)
 
 def test_rating_functions():
@@ -193,15 +193,16 @@ def get_paraphrasing_rating(group, reg_function, user_model, zscore_val, pf_valu
     return rating
  
 if __name__ == "__main__":
+    np.set_printoptions(precision=4, suppress=True)
     test = 0 # run testing lines...
-    
+   
     data_cols = data_gen() # Generate random values.
     # Use the user model to generate quality ratings
     # The definition of 'rating system' will be incorperating the user models.
     user_model, reg_model = Usermodels().get()    # Variable user_models will have a "SDT object" and a "quality regression model"
     
-    hearing_group = 'd'
-    #hearing_group = 'h'
+    #hearing_group = 'd'
+    hearing_group = 'h'
     v1 = user_model[hearing_group][1]
     pfa = v1['FA']/int(v1['FA']+v1['CR'])
     
@@ -236,45 +237,47 @@ if __name__ == "__main__":
     
     #test_rating_functions() # turn on the printing function if to test these...
 
-    # generate rating scores based on the random input.
+    # generate rating scores based on the random input..
+    print("Generating simulated quality rating scores...")
+    rating_list = [
+        [],[],[],[]
+    ]
+    count = 0
     for c in data_cols:
+        count += 1
+        if count % 1000 == 0:
+            print(count)
         delay, speed, missingword_count, pf_value = c[0], c[1], c[2], c[3]
-        ######### GET RATINGS ####################################################################
-        # 1. Delay
-        # Delay did not have a positive sensitivity for both hearing groups, however, we may start from p(H) of both delays.
+        ############################## GET RATINGS ##################################
+        # 1. Delay: Delay did not have a positive sensitivity for both hearing groups, however, we may start from p(H) of both delays.
         # Let's find p(H) for 3 sec (variation 1) and 6 sec delay (variation 2)    
         delay_rating = get_delay_rating(hearing_group, v2_rm, v2_um, delay_map_function.solve(delay), delay)
-        # 2. Speed
-        # Speed for deaf group, didn't have positive sensitivity
+        # 2. Speed: Speed for deaf group, didn't have positive sensitivity
         # however, hoh group had the positive sensitivity on V4 (fast speed)
         speed_rating = get_speed_rating(hearing_group, v4_rm, v4_um, speed_map_function.solve(speed), speed)
         # 3. Missing Words
         # Linear for now... and v6 was selected because it has the positive sensitivity from both group.
         # Word frequency would play a role in the actual predictions though...
         mw_rating = get_mw_rating(hearing_group, v6_rm, v6_um, mw_map_function.solve(missingword_count), missingword_count)
-        # 4. Paraphrasing
-        # The paraphrasing factor was defined as 1 or 0
-        # Then, the value will be either 1 or 0, 
+        # 4. Paraphrasing: The paraphrasing factor was defined as 1 or 0
         pf_rating = get_paraphrasing_rating(hearing_group, v9_rm, v9_um, pf_map_function.solve(pf_value), pf_value)
 
-        # print("delay:\t{}\t-> rating: {}\n".format(delay, delay_rating) + 
-        # "speed:\t{}\t-> rating: {}\n".format(speed, speed_rating) + 
-        #  "# of missing words:\t{}\t-> rating: {}\n".format(missingword_count, mw_rating) + 
-        #  "(0=verbatim, 1=edited):\t{}\t-> rating: {}\n\n".format(pf_value, pf_rating))
-
+        #print("delay:\t{}\t-> rating: {}\n".format(delay, delay_rating) + "speed:\t{}\t-> rating: {}\n".format(speed, speed_rating) + "# of missing words:\t{}\t-> rating: {}\n".format(missingword_count, mw_rating) + "(0=verbatim, 1=edited):\t{}\t-> rating: {}\n\n".format(pf_value, pf_rating))
+        
         # now that we have the ratings, let's group the ratings to the columns.
-        # rating_list = [delay_rating, speed_rating, mw_rating, pf_rating]
-        # for r in rating_list:
-            
+        rating_list[0].append(round(delay_rating))
+        rating_list[1].append(round(speed_rating))
+        rating_list[2].append(round(mw_rating))
+        rating_list[3].append(round(pf_rating))
 
+    rl_c = np.array(rating_list)
 
-        # p = np.asarray(RATING_LIST)
-        # for i in p:
-        #     c = np.column_stack((c, i))
-
-    # print(c.shape) # For a matrix with n rows and m columns, shape will be (n,m)
-    # filename = str(SCALE) + '_nd_dt_' + str(DATASIZE) + '.csv'
-    # with open(filename, 'w') as mf:
-    # wr = csv.writer(mf)
-    # for i in c:
-    #     wr.writerow(i)
+    for nc in rl_c:
+        data_cols = np.column_stack((data_cols, nc))
+    print("rating score generation finished, now it's trying to export to csv file...")
+    print(rl_c.shape, data_cols.shape) # For a matrix with n rows and m columns, shape will be (n,m)
+    filename = hearing_group + '_user_model_data' + str(DATASIZE) + '.csv'
+    with open(filename, 'w') as mf:
+        wr = csv.writer(mf)
+        for r in data_cols:
+            wr.writerow(r)

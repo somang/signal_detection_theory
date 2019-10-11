@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/usr/local/opt/python/bin/python3.7",
+    "python.pythonPath": "C:\\Users\\somang\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
     "python.linting.pylintEnabled": false,
     "python.linting.mypyEnabled": true,
     "python.linting.enabled": true
