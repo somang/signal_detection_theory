@@ -45,22 +45,22 @@ def get_truncated_normal(mean=0, sd=0, low=0, high=10):
   value = truncnorm((low - mean) / sd, (high - mean) / sd, loc=mean, scale=sd)
   return value
 
-def data_gen():
+def data_gen():    
     # delay, wpm, similarity, number of errors
     ### normal distribution using the mean and sd from existing data.
     trn = get_truncated_normal(mean=4895.75, sd=1477.94, low=0, high=12000)
     r_delay = trn.rvs(DATASIZE)
-
-    trn = get_truncated_normal(mean=232.03, sd=200.48, low=80, high=850) # from sample
-    r_wpm = trn.rvs(DATASIZE)    
-    
+    trn = get_truncated_normal(mean=232.03, sd=200.48, low=80, high=850) # speed from sample
+    r_wpm = trn.rvs(DATASIZE)        
     # considering paraphrasing value, if paraphrased = 0, then there will be no missing words.
     # if paraphrased = 1, then we have some missing words AND the word frequency can be generated (log)    
     missing_words, paraphrasing = [], [] # zipf_scale... though
     trn = get_truncated_normal(mean=5.02, sd=6.79, low=0.0, high=25) 
     for i in range(DATASIZE):    # because it cannot have a 100% and a missing word..
         paraphrasing_value = random.randint(0, 1) # paraphrasing distribution should reflect sample analysis too. but work on this later.        
+        
         paraphrasing.append(paraphrasing_value)
+
         if paraphrasing_value > 0: # Paraphrased -> some missing words.            
             mw = np.rint(trn.rvs()) # round to integer value.
             missing_words.append(mw)
@@ -196,88 +196,86 @@ if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
     test = 0 # run testing lines...
    
-    data_cols = data_gen() # Generate random values.
+    data_cols = data_gen().tolist() # Generate random values. #data_cols = np.concatenate((data_cols, data_cols))
+    data_bin = []
+
     # Use the user model to generate quality ratings
     # The definition of 'rating system' will be incorperating the user models.
     user_model, reg_model = Usermodels().get()    # Variable user_models will have a "SDT object" and a "quality regression model"
-    
-    #hearing_group = 'd'
-    hearing_group = 'h'
-    v1 = user_model[hearing_group][1]
-    pfa = v1['FA']/int(v1['FA']+v1['CR'])
-    
-    # 1. Delay tools
-    v2_um, v2_rm = user_model[hearing_group][2], reg_model[hearing_group][2]
-    if v2_um.dprime() > 0:
-        delay_map_function = Line( (3000, v2_um.c()-v2_um.dprime()) , (6000, v2_um.c()) ) # linear mapping...
-    else:
-        delay_map_function = Line( (0, 0) , (6000, v2_um.c()) ) # linear mapping...
-    # 2. Speed tools
-    v3_um, v3_rm = user_model[hearing_group][3], reg_model[hearing_group][3] # slow
-    v4_um, v4_rm = user_model[hearing_group][4], reg_model[hearing_group][4] # fast
-    # regression model for v4:200 wpm as for deaf , the d' is the same for v3 and v4.
-    if v4_um.dprime() > 0:
-        speed_map_function = Line( (160, v4_um.c()-v4_um.dprime()) , (200, v4_um.c()) ) # linear mapping...
-    else:
-        speed_map_function = Line( (0, 0) , (200, v4_um.c()) ) # linear mapping...
-    # 3. Missing Word count
-    mapping = 1
-
-    v5_um, v5_rm = user_model[hearing_group][5], reg_model[hearing_group][5] # 1HF d:-, h:+
-    v6_um, v6_rm = user_model[hearing_group][6], reg_model[hearing_group][6] # 5HF d:+, h:+  -> this can be used..
-    v7_um, v7_rm = user_model[hearing_group][7], reg_model[hearing_group][7] # 1LF d:-, h:-
-    v8_um, v8_rm = user_model[hearing_group][8], reg_model[hearing_group][8] # 5LF d:-, h:+
-    if mapping == 2: # v6_um.dprime() > 0:
-        mw_map_function = Line( (0, v6_um.c()-v6_um.dprime()) , (5, v4_um.c()) ) # linear mapping... using dprime
-    else:
-        mw_map_function = Line( (0, 0) , (5, v4_um.c()) ) # linear mapping...
-    # 4. Paraphrasing
-    v9_um, v9_rm = user_model[hearing_group][9], reg_model[hearing_group][9] # paraphrasing
-    pf_map_function = Line( (0, 0) , (1, v9_um.c()) ) # linear mapping...
-    
-    #test_rating_functions() # turn on the printing function if to test these...
-
-    # generate rating scores based on the random input..
-    print("Generating simulated quality rating scores...")
-    rating_list = [
-        [],[],[],[]
-    ]
-    count = 0
-    for c in data_cols:
+    count, switch = 0, 0
+    for data_row in data_cols:
         count += 1
-        if count % 1000 == 0:
+        if count % 10000 == 0:
+            switch = 1
             print(count)
-        delay, speed, missingword_count, pf_value = c[0], c[1], c[2], c[3]
-        ############################## GET RATINGS ##################################
-        # 1. Delay: Delay did not have a positive sensitivity for both hearing groups, however, we may start from p(H) of both delays.
-        # Let's find p(H) for 3 sec (variation 1) and 6 sec delay (variation 2)    
-        delay_rating = get_delay_rating(hearing_group, v2_rm, v2_um, delay_map_function.solve(delay), delay)
-        # 2. Speed: Speed for deaf group, didn't have positive sensitivity
-        # however, hoh group had the positive sensitivity on V4 (fast speed)
-        speed_rating = get_speed_rating(hearing_group, v4_rm, v4_um, speed_map_function.solve(speed), speed)
-        # 3. Missing Words
-        # Linear for now... and v6 was selected because it has the positive sensitivity from both group.
-        # Word frequency would play a role in the actual predictions though...
-        mw_rating = get_mw_rating(hearing_group, v6_rm, v6_um, mw_map_function.solve(missingword_count), missingword_count)
-        # 4. Paraphrasing: The paraphrasing factor was defined as 1 or 0
-        pf_rating = get_paraphrasing_rating(hearing_group, v9_rm, v9_um, pf_map_function.solve(pf_value), pf_value)
+        delay, speed, missingword_count, pf_value = data_row[0], data_row[1], data_row[2], data_row[3]
 
-        #print("delay:\t{}\t-> rating: {}\n".format(delay, delay_rating) + "speed:\t{}\t-> rating: {}\n".format(speed, speed_rating) + "# of missing words:\t{}\t-> rating: {}\n".format(missingword_count, mw_rating) + "(0=verbatim, 1=edited):\t{}\t-> rating: {}\n\n".format(pf_value, pf_rating))
-        
-        # now that we have the ratings, let's group the ratings to the columns.
-        rating_list[0].append(round(delay_rating))
-        rating_list[1].append(round(speed_rating))
-        rating_list[2].append(round(mw_rating))
-        rating_list[3].append(round(pf_rating))
+        hearing_groups = ['d', 'h']
+        for hearing_group in hearing_groups:
+            v1 = user_model[hearing_group][1]
+            pfa = v1['FA']/int(v1['FA']+v1['CR'])
+            v2_um, v2_rm = user_model[hearing_group][2], reg_model[hearing_group][2]             # 1. Delay tools
+            if v2_um.dprime() > 0:
+                delay_map_function = Line( (3000, v2_um.c()-v2_um.dprime()) , (6000, v2_um.c()) ) # linear mapping...
+            else:
+                delay_map_function = Line( (0, 0) , (6000, v2_um.c()) ) # linear mapping...            
+            v3_um, v3_rm = user_model[hearing_group][3], reg_model[hearing_group][3] # slow # 2. Speed tools
+            v4_um, v4_rm = user_model[hearing_group][4], reg_model[hearing_group][4] # fast
+            # regression model for v4:200 wpm as for deaf , the d' is the same for v3 and v4.
+            if v4_um.dprime() > 0:
+                speed_map_function = Line( (160, v4_um.c()-v4_um.dprime()) , (200, v4_um.c()) ) # linear mapping...
+            else:
+                speed_map_function = Line( (0, 0) , (200, v4_um.c()) ) # linear mapping...
+            # 3. Missing Word count
+            mapping = 1
+            v5_um, v5_rm = user_model[hearing_group][5], reg_model[hearing_group][5] # 1HF d:-, h:+
+            v6_um, v6_rm = user_model[hearing_group][6], reg_model[hearing_group][6] # 5HF d:+, h:+  -> this can be used..
+            v7_um, v7_rm = user_model[hearing_group][7], reg_model[hearing_group][7] # 1LF d:-, h:-
+            v8_um, v8_rm = user_model[hearing_group][8], reg_model[hearing_group][8] # 5LF d:-, h:+
+            if mapping == 2: # v6_um.dprime() > 0:
+                mw_map_function = Line( (0, v6_um.c()-v6_um.dprime()) , (5, v4_um.c()) ) # linear mapping... using dprime
+            else:
+                mw_map_function = Line( (0, 0) , (5, v4_um.c()) ) # linear mapping...            
+            v9_um, v9_rm = user_model[hearing_group][9], reg_model[hearing_group][9] # 4. Paraphrasing
+            pf_map_function = Line( (0, 0) , (1, v9_um.c()) ) # linear mapping...            
+            #test_rating_functions() # turn on the printing function if to test these...
 
-    rl_c = np.array(rating_list)
+            # generate rating scores based on the random input..            
+            if switch == 1:
+                print("Generating simulated quality rating scores for {} by {}".format(data_row, hearing_group))
+                switch = 0
+            rating_list = []
+            ############################## GET RATINGS ##################################
+            # 1. Delay: Delay did not have a positive sensitivity for both hearing groups, however, we may start from p(H) of both delays.
+            # Let's find p(H) for 3 sec (variation 1) and 6 sec delay (variation 2)    
+            delay_rating = get_delay_rating(hearing_group, v2_rm, v2_um, delay_map_function.solve(delay), delay)
+            # 2. Speed: Speed for deaf group, didn't have positive sensitivity
+            # however, hoh group had the positive sensitivity on V4 (fast speed)
+            speed_rating = get_speed_rating(hearing_group, v4_rm, v4_um, speed_map_function.solve(speed), speed)
+            # 3. Missing Words
+            # Linear for now... and v6 was selected because it has the positive sensitivity from both group.
+            # Word frequency would play a role in the actual predictions though...
+            mw_rating = get_mw_rating(hearing_group, v6_rm, v6_um, mw_map_function.solve(missingword_count), missingword_count)
+            # 4. Paraphrasing: The paraphrasing factor was defined as 1 or 0
+            pf_rating = get_paraphrasing_rating(hearing_group, v9_rm, v9_um, pf_map_function.solve(pf_value), pf_value)
 
-    for nc in rl_c:
-        data_cols = np.column_stack((data_cols, nc))
+            #print("delay:\t{}\t-> rating: {}\n".format(delay, delay_rating) + "speed:\t{}\t-> rating: {}\n".format(speed, speed_rating) + "# of missing words:\t{}\t-> rating: {}\n".format(missingword_count, mw_rating) + "(0=verbatim, 1=edited):\t{}\t-> rating: {}\n\n".format(pf_value, pf_rating))
+            
+            # now that we have the ratings, let's group the ratings to the columns.
+            hearing_code = 1 if hearing_group == "d" else 2 # deaf=1, hoh=2
+            rating_list.append(hearing_code)
+            rating_list.append(round(delay_rating))
+            rating_list.append(round(speed_rating))
+            rating_list.append(round(mw_rating))
+            rating_list.append(round(pf_rating))
+            tmp_datarow_with_rating = data_row + rating_list
+            data_bin.append(tmp_datarow_with_rating)
+            
     print("rating score generation finished, now it's trying to export to csv file...")
-    print(rl_c.shape, data_cols.shape) # For a matrix with n rows and m columns, shape will be (n,m)
-    filename = hearing_group + '_user_model_data' + str(DATASIZE) + '.csv'
+    data_bin = np.array(data_bin)
+
+    filename = 'c_user_model_data' + str(DATASIZE) + '.csv'
     with open(filename, 'w') as mf:
         wr = csv.writer(mf)
-        for r in data_cols:
+        for r in data_bin:
             wr.writerow(r)
