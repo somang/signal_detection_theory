@@ -4,7 +4,8 @@ from keras.layers import Dense
 
 
 # load the dataset
-dataset = loadtxt('pima-indians-diabetes.csv', delimiter=',')
+dataset = loadtxt('c_user_model_data100000.csv', delimiter=',')
 # split into input (X) and output (y) variables
-X = dataset[:,0:8]
-y = dataset[:,8]
+X = dataset[0,0:4]
+Y = dataset[0,4:]
+print(X, Y)
