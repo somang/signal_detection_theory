@@ -10,7 +10,7 @@ from sklearn.metrics import mean_squared_error
 import numpy as np
 from math import sqrt
 
-EPOCHS = 40  # Number of reps
+EPOCHS = 50  # Number of reps
 BATCH = 500
 DATAFILE = "c_user_model_data100000.csv"
 TRAINING = 1
@@ -19,7 +19,7 @@ def data_prep():
     ###########LOAD DATA ##############
     dataset = loadtxt(DATAFILE, delimiter=',')
     print(len(dataset))
-    t_index = round(len(dataset) * 0.8)  # 80% to train
+    t_index = round(len(dataset) * 0.8)  # 90% to train
     # split into input (X) and output (y) variables
     np.set_printoptions(precision=4, suppress=True)
 
@@ -41,13 +41,15 @@ def data_prep():
 # define keras model
 def train_nn_reglu(x_tr, x_ts, y_tr, y_ts):
     model = Sequential()
-    model.add(Dense(units=120, input_dim=5, activation='relu'))
-    model.add(Dense(units=120, activation='relu'))
+    model.add(Dense(units=6, input_dim=5, activation='relu'))
+    model.add(Dense(units=12, activation='relu'))
+    model.add(Dense(units=8, activation='softmax'))
     model.add(Dense(units=4))
 
     # compile keras model
-    model.compile(loss='mean_absolute_error', optimizer='RMSprop', metrics=['accuracy'])
-    # model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+    #model.compile(loss='mean_absolute_error', optimizer='RMSprop', metrics=['accuracy'])
+    #model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='mean_squared_error', optimizer='RMSprop', metrics=['accuracy'])
 
     # Fit Keras Model
     hist = model.fit(x_tr, y_tr, epochs=EPOCHS, batch_size=BATCH,
@@ -80,21 +82,21 @@ if __name__ == '__main__':
 
 
     #Graph Prediction VS Real
-    predictions = model.predict(x_ts, batch_size=50)
+    predictions = model.predict(x_ts, batch_size=500)
     print_model_perf(predictions, x_ts, y_ts, "Multilayer Perceptron:")
 
-    # # Linear Regression
+    # Linear Regression
     # mlm = linear_model.LinearRegression()
     # stat_model = mlm.fit(x_tr, y_tr)
     # predictions = mlm.predict(x_ts)
     # print_model_perf(predictions, x_ts, y_ts, "MLM")
-    #
-    # ##### Polynomial linear regression
-    # poly = PolynomialFeatures(degree=3)
-    # training_x = poly.fit_transform(x_tr)
-    # testing_x = poly.fit_transform(x_ts)
-    # lg = linear_model.LinearRegression()
-    # lg.fit(training_x, y_tr)
-    # predictions = lg.predict(testing_x)
-    # print_model_perf(predictions, x_ts, y_ts, "Polynomial Regression:")
-    #
+    
+    ##### Polynomial linear regression
+    poly = PolynomialFeatures(degree=3)
+    training_x = poly.fit_transform(x_tr)
+    testing_x = poly.fit_transform(x_ts)
+    lg = linear_model.LinearRegression()
+    lg.fit(training_x, y_tr)
+    predictions = lg.predict(testing_x)
+    print_model_perf(predictions, x_ts, y_ts, "Polynomial Regression:")
+    
