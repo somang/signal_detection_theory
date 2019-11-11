@@ -94,15 +94,15 @@ def testprinting(factorvalue, zscore_val, eph, rating):
     print("raw:{}, Z-score (c):{}, \np(H):{} ==> Predicted Rating:{}\n".format(factorvalue, zscore_val, eph, rating))
 
 def get_delay_rating(group, reg_function, user_model, zscore_val, delay):    
-    rating = 0
+    rating = 0 # initialization
     regression_mode = 1 if user_model.dprime() > 1 else 0
     eph, epfa = get_probabilities(user_model.dprime(), zscore_val)
     if regression_mode:
         X_test = PolynomialFeatures(degree=2).fit_transform([ [eph, epfa] ]) 
         if delay > 6000:
-            rating = 1
+            rating = 1 # is 1/5
         elif delay < 100: # minimum bound?
-            rating = 5
+            rating = 5 # is 5/5
         else:
             rating = reg_function.predict(X_test)    
     else:                                   # manual fitting, polynomial on raw values...                
@@ -214,18 +214,23 @@ if __name__ == "__main__":
         for hearing_group in hearing_groups:
             v1 = user_model[hearing_group][1]
             pfa = v1['FA']/int(v1['FA']+v1['CR'])
-            v2_um, v2_rm = user_model[hearing_group][2], reg_model[hearing_group][2]             # 1. Delay tools
+            v2_um, v2_rm = user_model[hearing_group][2], reg_model[hearing_group][2]             
+            
+            # 1. Delay tools
             if v2_um.dprime() > 0:
                 delay_map_function = Line( (3000, v2_um.c()-v2_um.dprime()) , (6000, v2_um.c()) ) # linear mapping...
             else:
-                delay_map_function = Line( (0, 0) , (6000, v2_um.c()) ) # linear mapping...            
-            v3_um, v3_rm = user_model[hearing_group][3], reg_model[hearing_group][3] # slow # 2. Speed tools
+                delay_map_function = Line( (0, 0) , (6000, v2_um.c()) ) # linear mapping...       
+
+            # 2. Speed tools    
+            v3_um, v3_rm = user_model[hearing_group][3], reg_model[hearing_group][3] # slow 
             v4_um, v4_rm = user_model[hearing_group][4], reg_model[hearing_group][4] # fast
             # regression model for v4:200 wpm as for deaf , the d' is the same for v3 and v4.
             if v4_um.dprime() > 0:
                 speed_map_function = Line( (160, v4_um.c()-v4_um.dprime()) , (200, v4_um.c()) ) # linear mapping...
             else:
                 speed_map_function = Line( (0, 0) , (200, v4_um.c()) ) # linear mapping...
+
             # 3. Missing Word count
             mapping = 1
             v5_um, v5_rm = user_model[hearing_group][5], reg_model[hearing_group][5] # 1HF d:-, h:+
@@ -235,9 +240,11 @@ if __name__ == "__main__":
             if mapping == 2: # v6_um.dprime() > 0:
                 mw_map_function = Line( (0, v6_um.c()-v6_um.dprime()) , (5, v4_um.c()) ) # linear mapping... using dprime
             else:
-                mw_map_function = Line( (0, 0) , (5, v4_um.c()) ) # linear mapping...            
-            v9_um, v9_rm = user_model[hearing_group][9], reg_model[hearing_group][9] # 4. Paraphrasing
-            pf_map_function = Line( (0, 0) , (1, v9_um.c()) ) # linear mapping...            
+                mw_map_function = Line( (0, 0) , (5, v4_um.c()) ) # linear mapping...
+
+            # 4. Paraphrasing            
+            v9_um, v9_rm = user_model[hearing_group][9], reg_model[hearing_group][9] 
+            pf_map_function = Line( (0, 0) , (1, v9_um.c()) ) # linear mapping...
             #test_rating_functions() # turn on the printing function if to test these...
 
             # generate rating scores based on the random input..            
